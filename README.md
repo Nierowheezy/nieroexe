@@ -52,7 +52,15 @@ Each project is represented by a **distinct 3D object** — not generic building
 </tr>
 <tr>
 <td><img src="docs/screenshot-mobile.png" alt="Mobile View" width="400"/></td>
-<td><em>Click "Projects" in bottom dock to view</em></td>
+<td><img src="docs/screenshot-portfolio.png" alt="Portfolio Modal" width="400"/></td>
+</tr>
+<tr>
+<td align="center"><strong>Vehicle Customizer</strong></td>
+<td align="center"><strong>Lagos Weather Sync</strong></td>
+</tr>
+<tr>
+<td><img src="docs/screenshot-customizer.png" alt="Vehicle Customizer" width="400"/></td>
+<td><img src="docs/screenshot-weather.png" alt="Lagos Weather Sync" width="400"/></td>
 </tr>
 </table>
 
@@ -262,6 +270,12 @@ The included `vercel.json` handles:
 - SPA routing (all routes → `index.html`)
 - Asset caching (1 year for `/assets/*`)
 - Clean URLs
+
+### Custom Domain: `niero.portfolio`
+To use a custom domain like `niero.portfolio`:
+1. In Vercel Dashboard → Project → Settings → Domains
+2. Add your custom domain
+3. Configure DNS records as instructed by Vercel
 
 ### Other Static Hosts
 The `dist/` output is a standard static site. Deploy to:
