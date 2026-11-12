@@ -1,139 +1,331 @@
 # NIERO.EXE — Interactive 3D World Portfolio
 
-An interactive low-poly 3D world portfolio for **Olabode Olaniyi David (NIERO.EXE)**, Full Stack Software Engineer. Drive a customizable vehicle through a stylized world to discover projects, experience, and skills.
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](CHANGELOG.md)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6.svg?logo=typescript)](https://www.typescriptlang.org)
+[![Three.js](https://img.shields.io/badge/Three.js-r187-000000.svg?logo=three.js)](https://threejs.org)
+[![Vite](https://img.shields.io/badge/Vite-6-646CFF.svg?logo=vite)](https://vitejs.dev)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38B2AC.svg?logo=tailwind-css)](https://tailwindcss.com)
 
-## 🎮 Features
+> **An interactive low-poly 3D world portfolio where visitors drive a customizable vehicle through a stylized landscape to discover projects, experience, and skills.**
 
-- **Explorable 3D World** — Drive through a procedural low-poly landscape with terrain, roads, rivers, and bridges
-- **12 Unique Thematic Landmarks** — Each project represented as a distinct 3D object (globe, kiosk, terminal, vault, tower, gateway, trophy, etc.)
-- **4 Drivable Vehicle Models** — Dune Buggy, Cyber Roadster, Lunar Explorer, Turbo Cruiser
-- **5 World Themes** — Obsidian Twilight, Sahara Sunset, Emerald Aurora, Deep Oceanic, Synthwave Noir
-- **Real Lagos Weather Sync** — 3D world atmosphere mirrors actual Lagos, Nigeria weather (via Open-Meteo)
-- **Time-Trial Racing** — Checkpoint circuit with lap timing and leaderboards
-- **Cinematic Drone Tour** — Auto-flying showcase through all projects
-- **Auto-Drive Mode** — Autonomous cruise between all landmarks
-- **6 Collectible Tech Tokens** — TypeScript, React/Three.js, Node.js, PostgreSQL/Redis, Docker/AWS, WebSockets
-- **Achievement System** — Speed Demon, Drift Master, Master Explorer, Tech Collector, and more
-- **Full Portfolio Modal** — About, Projects, Experience, Skills, Resume (PDF), Contact
-- **Mobile Touch Controls** — Full on-screen controls for mobile devices
+🌐 **Live Demo:** [https://niero-portfolio.vercel.app](https://niero-portfolio.vercel.app)  
+📄 **Resume:** [View PDF](./public/assets/resume/Olaniyi_Olabode_David_dbf0b21e.pdf)  
+👨‍💻 **Developer:** [Olabode Olaniyi David](https://github.com/nierowheezy) | [LinkedIn](https://www.linkedin.com/in/olabode-olaniyi-david)
+
+---
+
+## 🎮 Experience the Portfolio
+
+### **Drive & Explore**
+Take control of a fully physics-simulated vehicle and freely explore a 160×160 unit low-poly world complete with roads, a river canal, arched bridge, and mountain boundaries.
+
+### **12 Unique Thematic Landmarks**
+Each project is represented by a **distinct 3D object** — not generic buildings:
+| Project | Landmark | Visual Metaphor |
+|---------|----------|-----------------|
+| Nigerian Postcode Atlas | 🌍 Globe | Miniature geographic globe with coordinate rings |
+| KnowYourRights NG | 🏛️ Kiosk | Digital civic info terminal with interactive screen |
+| Mova / Xfund | 💻 Terminal | Fintech transaction monolith with LED data slits |
+| Proofmark | 🔐 Vault | Cryptographic vault with rotating diamond scanner |
+| use-dark-switch | 🔘 Switch | Physical toggle monolith with floating mode sphere |
+| SQL Cheatsheet | 📐 Monolith | Database query obelisk with glowing data ring |
+| Channels TV | 📡 Tower | Broadcasting antenna with satellite dish |
+| IDS Africa / ALAT | 🚪 Gateway | Enterprise transaction arch with energy beam |
+| GitHub Badges | 🏆 Badge | Trophy pedestal with floating GitHub star |
+
+### **Screenshots**
+
+<table>
+<tr>
+<td align="center"><strong>Dashboard View</strong></td>
+<td align="center"><strong>Driving View</strong></td>
+</tr>
+<tr>
+<td><img src="docs/screenshot-dashboard.png" alt="Dashboard View" width="400"/></td>
+<td><img src="docs/screenshot-driving.png" alt="Driving View" width="400"/></td>
+</tr>
+<tr>
+<td align="center"><strong>Mobile View</strong></td>
+<td align="center"><strong>Portfolio Modal</strong></td>
+</tr>
+<tr>
+<td><img src="docs/screenshot-mobile.png" alt="Mobile View" width="400"/></td>
+<td><em>Click "Projects" in bottom dock to view</em></td>
+</tr>
+</table>
+
+---
+
+## ✨ Key Features
+
+### 🌍 **Real-Time Lagos Weather Sync**
+The 3D world's atmosphere **strictly mirrors actual conditions in Lagos, Nigeria** — powered by [Open-Meteo](https://open-meteo.com/).
+- ☀️ Sunny → Clear skies, warm lighting
+- ☁️ Overcast → Dimmed lighting, cloud cover
+- 🌧️ Rain → Dynamic rain streaks, wet surfaces, thunderstorm lighting
+- 📊 Hourly forecast dropdown (Morning, Afternoon, Evening, Night)
+- 🔄 Auto-refresh every 5 minutes + manual refresh
+- 🕐 Live West Africa Time (WAT) clock
+
+### 🚗 **4 Drivable Vehicle Models**
+| Model | Category | Top Speed | Handling |
+|-------|----------|-----------|----------|
+| **Dune Buggy** | Off-Road Spec | 24 MPH | Agile & Responsive |
+| **Cyber Roadster** | Aero Hypercar | 28 MPH | High Grip & Precision |
+| **Lunar Explorer** | Heavy Tech Rover | 22 MPH | Maximum Stability |
+| **Turbo Cruiser** | Retro Fastback | 26 MPH | Raw Drift Output |
+
+- 8 custom paint colors with live preview
+- Realistic physics: Ackermann steering, suspension lean, drift mechanics
+- Nitro boost with charge/drain system (Shift/N key)
+
+### 🏁 **Gameplay Modes**
+- **Free Roam** — Explore at your own pace
+- **Time-Trial Race** — 8-checkpoint circuit with lap timing & leaderboards
+- **Cinematic Drone Tour** — Auto-flying showcase through all landmarks
+- **Auto-Drive** — Autonomous cruise between all 12 projects (Z key)
+
+### 🏆 **Collectibles & Achievements**
+- **6 Tech Tokens** hidden across the world (TypeScript, React/Three.js, Node.js, PostgreSQL/Redis, Docker/AWS, WebSockets)
+- **8 Achievements**: Speed Demon, Drift Master, First Ignition, Master Explorer, Tech Collector, Nitro Overdrive, Lap Record, Overlook Master
+
+### 🎨 **5 World Themes** (Instant Palette Swap)
+| Theme | Palette | Vibe |
+|-------|---------|------|
+| **Obsidian Twilight** | Dark navy, sage, amber | Default dark-mode |
+| **Sahara Sunset** | Terracotta, warm reds | Dusk red planet |
+| **Emerald Aurora** | Arctic jade, mint | Sci-fi highlands |
+| **Deep Oceanic** | Midnight blues, cyan | Nautical depths |
+| **Synthwave Noir** | Cyberpunk purple, neon | High-contrast retro |
+
+### 📱 **Full Portfolio Modal**
+6 comprehensive tabs accessible from the bottom dock:
+1. **About** — Bio, stats, education
+2. **Projects** — 12 projects with descriptions, tech stacks, GitHub links
+3. **Experience** — 8 roles across Channels TV, iTap Solutions, Desygner, Wema Bank, etc.
+4. **Skills** — 6 categories, 24+ technologies
+5. **Resume** — Direct PDF download
+6. **Contact** — Email, phone, GitHub, LinkedIn
+
+### 🔊 **Procedural Audio (Zero Audio Files)**
+Web Audio API synthesis for:
+- Engine RPM-based pitch
+- Wind velocity scaling
+- Nitro boost roar
+- Brake squeal
+- UI interactions (clicks, checkpoints, token collection)
+
+---
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 19, TypeScript, Vite
-- **3D Engine**: Three.js (r187) with custom game loop
-- **Styling**: Tailwind CSS v4
-- **Animations**: Framer Motion (`motion`)
-- **Icons**: Lucide React
-- **Audio**: Web Audio API (procedural synthesis)
+| Category | Technologies |
+|----------|--------------|
+| **Frontend** | React 19, TypeScript 5, Vite 6 |
+| **3D Engine** | Three.js r187 (custom game loop) |
+| **Styling** | Tailwind CSS v4, CSS Modules |
+| **Animation** | Framer Motion (Motion) |
+| **Icons** | Lucide React |
+| **Audio** | Web Audio API (procedural synthesis) |
+| **Weather API** | Open-Meteo (Lagos: 6.5244, 3.3792) |
+| **Deployment** | Vercel (static) |
+| **Package Manager** | npm |
+
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js 18+
+- npm 9+
 
 ### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/nierowheezy/niero-portfolio.git
+cd niero-portfolio
+
 # Install dependencies
 npm install
 
-# Start development server (runs on http://localhost:3000)
+# Start development server (http://localhost:3000)
 npm run dev
 ```
 
-### Build for Production
+### Available Scripts
 
 ```bash
-npm run build
+npm run dev       # Start dev server on port 3000
+npm run build     # Production build to dist/
+npm run preview   # Preview production build
+npm run lint      # TypeScript type check
+npm run clean     # Remove dist/ and build artifacts
 ```
 
-Output goes to `dist/` directory.
-
-### Preview Production Build
-
-```bash
-npm run preview
-```
+---
 
 ## 🎮 Controls
 
-| Key | Action |
-|-----|--------|
+| Input | Action |
+|-------|--------|
 | `W` / `↑` | Accelerate |
 | `S` / `↓` | Brake / Reverse |
 | `A` / `←` | Steer Left |
 | `D` / `→` | Steer Right |
 | `Space` | Handbrake |
-| `Shift` / `N` | Nitro Boost |
-| `Z` | Toggle Auto-Drive |
-| `R` | Reset Vehicle |
+| `Shift` / `N` | **Nitro Boost** |
+| `Z` | Toggle **Auto-Drive** |
+| `R` | Reset Vehicle to Road |
 | `E` | Interact with Landmark |
 | `H` | Toggle Header Bar |
-| Mouse Drag | Orbit Camera |
-| Scroll | Zoom Camera |
+| `Mouse Drag` | Orbit Camera |
+| `Scroll` | Zoom Camera |
 
 ### Mobile
-On-screen touch controls appear automatically on touch devices.
+On-screen touch controls appear automatically on touch devices (iOS Safari, Chrome Android).
 
-## 🌍 Live Weather Integration
-
-The portfolio fetches real-time weather from **Open-Meteo** for Lagos, Nigeria (coordinates: 6.5244, 3.3792). The 3D world's atmosphere (sky, lighting, rain particles) strictly reflects actual conditions. Updates every 5 minutes.
+---
 
 ## 📦 Project Structure
 
 ```
-src/
-├── game/                 # Core 3D engine systems
-│   ├── engine.ts         # Main orchestrator
-│   ├── vehicle.ts        # Vehicle physics & models
-│   ├── terrain.ts        # Procedural terrain & heightmap
-│   ├── landmarks.ts      # Project landmarks & tokens
-│   ├── camera.ts         # Chase camera & cinematic modes
-│   ├── weather.ts        # Dynamic weather system
-│   ├── race.ts           # Time-trial racing
-│   ├── tour.ts           # Cinematic drone tour
-│   ├── autodrive.ts      # Autonomous driving
-│   ├── audio.ts          # Web Audio synthesis
-│   ├── environment.ts    # Trees, rocks, ambient details
-│   ├── nitroParticles.ts # Nitro particle effects
-│   └── constants.ts      # Palette, configs, themes
-├── components/           # React UI components
-│   ├── HUD.tsx           # Main HUD overlay
-│   ├── ProjectModal.tsx  # Project detail view
-│   ├── PortfolioModal.tsx# Full portfolio tabs
-│   ├── CustomizerModal.tsx# Vehicle & theme customizer
-│   ├── Minimap.tsx       # Radar minimap
-│   └── ...               # Other UI components
-├── data/
-│   └── portfolioData.ts  # Projects, experience, skills, tokens
-├── services/
-│   └── lagosWeather.ts   # Open-Meteo weather integration
-├── App.tsx               # Main app component
-└── main.tsx              # Entry point
+niero-portfolio/
+├── public/
+│   └── assets/
+│       └── resume/
+│           └── Olaniyi_Olabode_David_dbf0b21e.pdf
+├── src/
+│   ├── components/           # React UI components
+│   │   ├── HUD.tsx           # Main overlay (header, minimap, dock, proximity banner)
+│   │   ├── ProjectModal.tsx  # Single project detail view
+│   │   ├── PortfolioModal.tsx# Full 6-tab portfolio
+│   │   ├── CustomizerModal.tsx# Vehicle & theme customizer
+│   │   ├── Minimap.tsx       # Radar with teleport & project select
+│   │   ├── SpeedometerGauge.tsx# Circular digital speedometer
+│   │   ├── RaceTimerHUD.tsx  # Race timing & checkpoints
+│   │   ├── RadioWidget.tsx   # Lagos-themed radio widget
+│   │   ├── TourOverlay.tsx   # Drone tour / auto-drive banner
+│   │   ├── AudioSettingsModal.tsx# Audio mixer
+│   │   └── ...
+│   ├── data/
+│   │   └── portfolioData.ts  # Projects, experience, skills, tokens
+│   ├── game/                 # Core 3D engine (Three.js)
+│   │   ├── engine.ts         # Main orchestrator (render loop, input, callbacks)
+│   │   ├── vehicle.ts        # Physics, 4 models, nitro, dust, suspension
+│   │   ├── terrain.ts        # Procedural heightmap, roads, river, bridge
+│   │   ├── landmarks.ts      # 12 thematic landmarks + 6 tokens
+│   │   ├── camera.ts         # Chase cam, orbit, inspect, cinematic
+│   │   ├── weather.ts        # Rain, overcast, sunny + particle streaks
+│   │   ├── race.ts           # Time-trial circuit, checkpoints, laps
+│   │   ├── tour.ts           # Cinematic drone tour system
+│   │   ├── autodrive.ts      # Autonomous pathfinding between landmarks
+│   │   ├── audio.ts          # Web Audio synthesis (engine, wind, SFX)
+│   │   ├── environment.ts    # Procedural trees, rocks, ambient
+│   │   ├── nitroParticles.ts # 3D trailing nitro particle system
+│   │   └── constants.ts      # Palette, configs, themes, vehicle specs
+│   ├── services/
+│   │   └── lagosWeather.ts   # Open-Meteo integration + WAT clock
+│   ├── App.tsx               # Root component, state, callbacks
+│   ├── main.tsx              # Entry point
+│   └── index.css             # Global styles, Tailwind imports
+├── docs/                     # Screenshots for README
+├── .github/
+│   └── workflows/
+│       └── deploy.yml        # Vercel deployment workflow
+├── CHANGELOG.md              # Version history
+├── vercel.json               # Vercel config (SPA routing, caching)
+├── vite.config.ts            # Vite + Tailwind + React config
+├── tsconfig.json             # TypeScript config
+├── package.json
+└── README.md
 ```
-
-## 🚀 Deployment
-
-### Vercel (Recommended)
-
-1. Push to GitHub
-2. Import project in Vercel
-3. Framework preset: **Vite**
-4. Build command: `npm run build`
-5. Output directory: `dist`
-6. Deploy
-
-The `vercel.json` handles SPA routing and asset caching.
-
-### Other Static Hosts
-
-The build output in `dist/` is a standard static site. Deploy to Netlify, Cloudflare Pages, GitHub Pages, etc.
-
-## 📄 License
-
-MIT License — feel free to use as inspiration for your own portfolio!
 
 ---
 
-**Built with ❤️ by Olabode Olaniyi David**  
-📍 Lagos, Nigeria • [GitHub](https://github.com/nierowheezy) • [LinkedIn](https://www.linkedin.com/in/olabode-olaniyi-david)
+## 🌐 Deployment
+
+### Vercel (Recommended)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/nierowheezy/niero-portfolio)
+
+1. Push to GitHub
+2. Import project in [Vercel Dashboard](https://vercel.com/dashboard)
+3. Framework Preset: **Vite**
+4. Build Command: `npm run build`
+5. Output Directory: `dist`
+6. Deploy
+
+The included `vercel.json` handles:
+- SPA routing (all routes → `index.html`)
+- Asset caching (1 year for `/assets/*`)
+- Clean URLs
+
+### Other Static Hosts
+The `dist/` output is a standard static site. Deploy to:
+- Netlify
+- Cloudflare Pages
+- GitHub Pages
+- AWS S3 + CloudFront
+- Firebase Hosting
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+No required environment variables. The weather service uses Open-Meteo's free tier (no API key needed).
+
+### Customization
+Edit `src/data/portfolioData.ts` to:
+- Update personal info (`DEVELOPER_PROFILE`)
+- Add/remove projects (`PROJECTS` array)
+- Modify experience entries (`EXPERIENCES`)
+- Adjust skill categories (`SKILL_CATEGORIES`)
+- Reposition landmarks (`coordinates` in each project)
+- Add/remove collectible tokens (`TOKENS`)
+
+Edit `src/game/constants.ts` to:
+- Modify color palette (`PALETTE`)
+- Adjust vehicle physics (`VEHICLE_CONFIG`)
+- Change world bounds (`WORLD_CONFIG`)
+- Add new themes (`ENVIRONMENT_THEMES`)
+- Add new vehicle models (`VEHICLE_MODELS`, `PAINT_COLORS`)
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+Feel free to use this as inspiration for your own portfolio! Attribution appreciated but not required.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Three.js** community for the incredible 3D engine
+- **Open-Meteo** for free weather API
+- **Lucide** for beautiful icons
+- **Tailwind CSS** for utility-first styling
+- **Vite** for lightning-fast builds
+- All open-source projects that made this possible
+
+---
+
+## 📞 Contact
+
+**Olabode Olaniyi David**  
+📍 Lagos, Nigeria  
+✉️ olaniyiolabode99@gmail.com  
+📱 +234 815 943 2789  
+🐙 [GitHub](https://github.com/nierowheezy)  
+💼 [LinkedIn](https://www.linkedin.com/in/olabode-olaniyi-david)
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ and TypeScript • v2.2.0 • <a href="CHANGELOG.md">Changelog</a></sub>
+</div>
