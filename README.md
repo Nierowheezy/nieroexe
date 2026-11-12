@@ -10,7 +10,7 @@
 
 > **An interactive low-poly 3D world portfolio where visitors drive a customizable vehicle through a stylized landscape to discover projects, experience, and skills.**
 
-🌐 **Live Demo:** [https://niero-portfolio.vercel.app](https://niero-portfolio.vercel.app)  
+🌐 **Live Demo:** [https://nieroexe.vercel.app](https://nieroexe.vercel.app)  
 📄 **Resume:** [View PDF](./public/assets/resume/Olaniyi_Olabode_David_dbf0b21e.pdf)  
 👨‍💻 **Developer:** [Olabode Olaniyi David](https://github.com/nierowheezy) | [LinkedIn](https://www.linkedin.com/in/olabode-olaniyi-david)
 
@@ -153,8 +153,8 @@ Web Audio API synthesis for:
 
 ```bash
 # Clone the repository
-git clone https://github.com/nierowheezy/niero-portfolio.git
-cd niero-portfolio
+git clone https://github.com/nierowheezy/nieroexe.git
+cd nieroexe
 
 # Install dependencies
 npm install
@@ -200,7 +200,7 @@ On-screen touch controls appear automatically on touch devices (iOS Safari, Chro
 ## 📦 Project Structure
 
 ```
-niero-portfolio/
+nieroexe/
 ├── public/
 │   └── assets/
 │       └── resume/
@@ -257,7 +257,7 @@ niero-portfolio/
 
 ### Vercel (Recommended)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/nierowheezy/niero-portfolio)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/nierowheezy/nieroexe)
 
 1. Push to GitHub
 2. Import project in [Vercel Dashboard](https://vercel.com/dashboard)
