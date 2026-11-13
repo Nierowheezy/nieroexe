@@ -151,6 +151,16 @@ export class TerrainSystem {
       return 0.05;
     }
 
+    // Playground Zone (South-East: Bowling Alley & Synth Pads) flat meadow
+    if (x >= 10 && x <= 30 && z >= 13 && z <= 33) {
+      return 0.1;
+    }
+
+    // Soccer Pitch Zone (South-West: Giant Ball & Goal) flat meadow
+    if (x >= -30 && x <= -10 && z >= 13 && z <= 33) {
+      return 0.1;
+    }
+
     // Elevated scenic viewpoint / Overlook hill (North-East: x: 30..50, z: -40..-20)
     const dxOverlook = x - 38;
     const dzOverlook = z - (-28);

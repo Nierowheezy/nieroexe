@@ -13,20 +13,21 @@ export const ProjectModal: React.FC<Props> = ({ project, onClose, onTeleport }) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#101820]/85 backdrop-blur-md animate-fade-in"
-      style={{ padding: '16px' }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#101820]/85 backdrop-blur-md animate-fade-in p-2.5 sm:p-5"
+      style={{
+        paddingTop: 'max(10px, env(safe-area-inset-top))',
+        paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+      }}
     >
       <div
-        className="w-full max-w-2xl bg-[#17242D] border border-[#24343D] rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-[#F2F0E9] animate-modal-enter select-text"
+        className="w-full max-w-2xl bg-[#17242D] border border-[#24343D] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90dvh] text-[#F2F0E9] animate-modal-enter select-text p-3 sm:p-5"
         style={{
-          padding: '20px',
           boxShadow: '0 25px 60px rgba(16, 24, 32, 0.98), 0 0 35px rgba(232, 117, 69, 0.15)',
         }}
       >
         {/* Header Banner Card */}
         <div
-          className="bg-[#24343D]/70 border border-[#24343D] rounded-2xl flex items-start justify-between relative shrink-0 mb-3"
-          style={{ padding: '16px 20px' }}
+          className="bg-[#24343D]/70 border border-[#24343D] rounded-2xl flex items-start justify-between relative shrink-0 mb-2.5 sm:mb-3 px-3.5 py-3 sm:px-5 sm:py-4"
         >
           <div className="pr-6 min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -54,8 +55,7 @@ export const ProjectModal: React.FC<Props> = ({ project, onClose, onTeleport }) 
 
         {/* Content Body with Guaranteed Padding */}
         <div
-          className="overflow-y-auto space-y-6 flex-1 rounded-2xl bg-[#101820]/40 border border-[#24343D]/60"
-          style={{ padding: '22px' }}
+          className="overflow-y-auto space-y-5 flex-1 rounded-2xl bg-[#101820]/40 border border-[#24343D]/60 p-3.5 sm:p-5"
         >
           {/* Main Description */}
           <div>

@@ -19,15 +19,24 @@ export class CameraController {
   // Interactive Orbit & Pan Controls
   public orbitYaw: number = 0; // Horizontal orbit offset (radians)
   public orbitPitch: number = 0; // Vertical pitch offset (radians)
+  private baseFov: number = CAMERA_CONFIG.fov;
+  private baseDistance: number = CAMERA_CONFIG.distance;
   public currentDist: number = CAMERA_CONFIG.distance;
   private isUserPanning: boolean = false;
   private timeSinceLastPan: number = 999;
   private targetFov: number = CAMERA_CONFIG.fov;
   private cinematicTarget: { camPos: THREE.Vector3; lookAt: THREE.Vector3 } | null = null;
 
+  // Smooth yaw follow & subtle banking tilt during turns
+  private smoothedHeading: number = 0;
+  private prevVehicleHeading: number = 0;
+  private hasInitializedHeading: boolean = false;
+  private currentTilt: number = 0;
+
   constructor(aspect: number) {
+    this.updateViewportForAspect(aspect, true);
     this.camera = new THREE.PerspectiveCamera(
-      CAMERA_CONFIG.fov,
+      this.baseFov,
       aspect,
       0.1,
       500
@@ -36,8 +45,33 @@ export class CameraController {
     this.camera.lookAt(this.currentLookAt);
   }
 
+  private updateViewportForAspect(aspect: number, resetZoom: boolean = false) {
+    const safeAspect = Math.max(0.35, aspect);
+    if (safeAspect < 1.0) {
+      // Portrait mobile (e.g. iPhone 16): widen vertical FOV and pull camera back slightly so road & surroundings aren't cropped
+      this.baseFov = THREE.MathUtils.clamp(
+        CAMERA_CONFIG.fov / Math.pow(safeAspect, 0.38),
+        CAMERA_CONFIG.fov,
+        68
+      );
+      this.baseDistance = THREE.MathUtils.clamp(
+        CAMERA_CONFIG.distance + (1 - safeAspect) * 4.5,
+        CAMERA_CONFIG.distance,
+        17.5
+      );
+    } else {
+      this.baseFov = CAMERA_CONFIG.fov;
+      this.baseDistance = CAMERA_CONFIG.distance;
+    }
+
+    if (resetZoom) {
+      this.currentDist = this.baseDistance;
+      this.targetFov = this.baseFov;
+    }
+  }
+
   public triggerBoostFOV() {
-    this.targetFov = 56;
+    this.targetFov = this.baseFov + 8;
   }
 
   public setCinematicTarget(target: { camPos: THREE.Vector3; lookAt: THREE.Vector3 } | null) {
@@ -45,7 +79,9 @@ export class CameraController {
   }
 
   public resize(width: number, height: number) {
-    this.camera.aspect = width / height;
+    const aspect = width / Math.max(1, height);
+    this.updateViewportForAspect(aspect, false);
+    this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();
   }
 
@@ -56,7 +92,7 @@ export class CameraController {
 
   public addOrbit(deltaYaw: number, deltaPitch: number) {
     this.orbitYaw += deltaYaw;
-    this.orbitPitch = THREE.MathUtils.clamp(this.orbitPitch + deltaPitch, -0.35, 0.75);
+    this.orbitPitch = THREE.MathUtils.clamp(this.orbitPitch + deltaPitch, -0.3, 1.15);
     this.isUserPanning = true;
     this.timeSinceLastPan = 0;
   }
@@ -66,29 +102,53 @@ export class CameraController {
   }
 
   public zoom(deltaZoom: number) {
-    this.currentDist = THREE.MathUtils.clamp(this.currentDist + deltaZoom, 8, 30);
+    this.currentDist = THREE.MathUtils.clamp(this.currentDist + deltaZoom, 8, 32);
   }
 
   public resetOrbit() {
     this.orbitYaw = 0;
     this.orbitPitch = 0;
-    this.currentDist = CAMERA_CONFIG.distance;
+    this.currentDist = this.baseDistance;
+  }
+
+  private normalizeAngleDiff(target: number, current: number): number {
+    let diff = target - current;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    return diff;
   }
 
   public update(delta: number, vehicle: Vehicle, terrain: TerrainSystem) {
     this.timeSinceLastPan += delta;
 
-    // Smooth FOV recovery
+    // Initialize heading tracking on first frame
+    if (!this.hasInitializedHeading) {
+      this.smoothedHeading = vehicle.heading;
+      this.prevVehicleHeading = vehicle.heading;
+      this.hasInitializedHeading = true;
+    }
+
+    // Measure vehicle yaw rotation rate (rad/s) for subtle camera tilt
+    const yawDelta = this.normalizeAngleDiff(vehicle.heading, this.prevVehicleHeading);
+    this.prevVehicleHeading = vehicle.heading;
+    // Ignore large instantaneous jumps (e.g. reset / teleport)
+    const isTeleportJump = Math.abs(yawDelta) > 0.5;
+    const yawRate = !isTeleportJump && delta > 0.001 ? yawDelta / delta : 0;
+
+    // Smooth FOV recovery to responsive baseFov
     if (Math.abs(this.camera.fov - this.targetFov) > 0.1) {
       this.camera.fov = THREE.MathUtils.damp(this.camera.fov, this.targetFov, 4.0, delta);
       this.camera.updateProjectionMatrix();
     }
-    this.targetFov = THREE.MathUtils.damp(this.targetFov, CAMERA_CONFIG.fov, 1.5, delta);
+    this.targetFov = THREE.MathUtils.damp(this.targetFov, this.baseFov, 1.5, delta);
+
+    let targetTilt = 0;
 
     if (this.cinematicTarget) {
       // Cinematic auto-pilot tour override
       this.currentPos.lerp(this.cinematicTarget.camPos, Math.min(delta * 3.5, 0.15));
       this.currentLookAt.lerp(this.cinematicTarget.lookAt, Math.min(delta * 4.0, 0.18));
+      this.smoothedHeading = vehicle.heading;
     } else if (this.inspectTarget) {
       // Orbit smoothly around landmark
       this.inspectAngle += delta * 0.35;
@@ -108,13 +168,27 @@ export class CameraController {
       // Third-person vehicle chase mode with interactive orbit
       const vehicleSpeed = Math.abs(vehicle.velocity);
 
-      // If user isn't actively panning and buggy is driving forward, gently decay orbit back behind vehicle
-      if (!this.isUserPanning && vehicleSpeed > 3 && this.timeSinceLastPan > 2.0) {
-        this.orbitYaw = THREE.MathUtils.damp(this.orbitYaw, 0, 1.8, delta);
-        this.orbitPitch = THREE.MathUtils.damp(this.orbitPitch, 0, 1.8, delta);
+      // Give users 4 seconds after panning before gently centering behind the car while driving
+      if (!this.isUserPanning && vehicleSpeed > 3 && this.timeSinceLastPan > 4.0) {
+        this.orbitYaw = THREE.MathUtils.damp(this.orbitYaw, 0, 1.2, delta);
+        this.orbitPitch = THREE.MathUtils.damp(this.orbitPitch, 0, 1.2, delta);
       }
 
-      const totalHeading = vehicle.heading + this.orbitYaw;
+      // Smoothly trail vehicle heading so turns feel weighty and fluid rather than snappy
+      if (isTeleportJump) {
+        this.smoothedHeading = vehicle.heading;
+      } else {
+        const headingDiff = this.normalizeAngleDiff(vehicle.heading, this.smoothedHeading);
+        const followFactor = 1 - Math.exp(-4.2 * delta);
+        this.smoothedHeading += headingDiff * followFactor;
+      }
+
+      // Subtle camera bank/tilt following vehicle yaw rotation during turns (~3-4 deg max)
+      if (vehicleSpeed > 1.0 && !this.isUserPanning) {
+        targetTilt = THREE.MathUtils.clamp(yawRate * 0.038, -0.07, 0.07);
+      }
+
+      const totalHeading = this.smoothedHeading + this.orbitYaw;
       const horizontalDist = this.currentDist * Math.cos(this.orbitPitch);
       const verticalOffset = this.currentDist * Math.sin(this.orbitPitch);
 
@@ -146,7 +220,15 @@ export class CameraController {
       this.currentLookAt.z = THREE.MathUtils.damp(this.currentLookAt.z, targetLookZ, damping * 1.2, delta);
     }
 
+    // Smoothly damp camera banking tilt
+    this.currentTilt = THREE.MathUtils.damp(this.currentTilt, targetTilt, 4.5, delta);
+
     this.camera.position.copy(this.currentPos);
     this.camera.lookAt(this.currentLookAt);
+
+    // Apply subtle horizon tilt along camera's forward axis after lookAt
+    if (Math.abs(this.currentTilt) > 0.0001) {
+      this.camera.rotateZ(this.currentTilt);
+    }
   }
 }

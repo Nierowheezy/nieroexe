@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { InteractiveTarget } from '../game/landmarks';
 import { sound } from '../game/audio';
 import { PortfolioTab } from './PortfolioModal';
@@ -26,14 +26,16 @@ import {
   Map,
   Palette,
   Video,
-  Navigation,
   Clock,
   RefreshCw,
   Wind,
   Droplets,
   Zap,
-  Flame,
   Sliders,
+  Navigation,
+  ExternalLink,
+  Megaphone,
+  Boxes,
 } from 'lucide-react';
 import { RadioWidget } from './RadioWidget';
 import { RaceTimerHUD } from './RaceTimerHUD';
@@ -54,6 +56,8 @@ interface Props {
   lagosWeather?: LagosWeatherReport | null;
   nitroState?: { isActive: boolean; charge: number };
   onTriggerNitro?: () => void;
+  onTriggerHorn?: () => void;
+  onResetProps?: () => void;
   onOpenAudioSettings?: () => void;
   onRefreshLagosWeather?: () => void;
   onInteract: () => void;
@@ -89,6 +93,8 @@ export const HUD: React.FC<Props> = ({
   lagosWeather,
   nitroState = { isActive: false, charge: 1.0 },
   onTriggerNitro,
+  onTriggerHorn,
+  onResetProps,
   onOpenAudioSettings,
   onRefreshLagosWeather,
   onInteract,
@@ -104,11 +110,13 @@ export const HUD: React.FC<Props> = ({
   onMobileInput,
 }) => {
   const [isMuted, setIsMuted] = useState(sound.getIsMuted());
-  const [isDockCollapsed, setIsDockCollapsed] = useState(false);
-  const [isTopCollapsed, setIsTopCollapsed] = useState(false);
+  const [isDockCollapsed, setIsDockCollapsed] = useState(true);
+  const [isTopCollapsed, setIsTopCollapsed] = useState(true);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [isMinimapVisible, setIsMinimapVisible] = useState(true);
   const [isWeatherDetailsOpen, setIsWeatherDetailsOpen] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(96);
+  const topBarRef = useRef<HTMLDivElement>(null);
 
   // Live ticking Lagos clock
   const [currentLagosTime, setCurrentLagosTime] = useState<{ lagosTime: string; lagosDate: string }>(
@@ -137,6 +145,26 @@ export const HUD: React.FC<Props> = ({
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
+  // Measure expanded header height dynamically so subheader widgets never collide on mobile wrap
+  useEffect(() => {
+    if (!topBarRef.current) return;
+    const updateHeight = () => {
+      if (topBarRef.current) {
+        setHeaderHeight(topBarRef.current.getBoundingClientRect().bottom + 8);
+      }
+    };
+    updateHeight();
+    const raf = requestAnimationFrame(updateHeight);
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(topBarRef.current);
+    window.addEventListener('resize', updateHeight);
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, [isTopCollapsed]);
+
   const handleToggleSound = () => {
     const muted = sound.toggleMute();
     setIsMuted(muted);
@@ -147,38 +175,52 @@ export const HUD: React.FC<Props> = ({
 
   return (
     <div className="absolute inset-0 pointer-events-none select-none overflow-hidden font-sans">
-      {/* 1. COLLAPSIBLE TOP HEADER MENU */}
+      {/* 1. COLLAPSIBLE TOP HEADER MENU (Safe-Area Aware for iPhone Dynamic Island) */}
       <div
-        className="absolute left-0 right-0 pointer-events-none z-30 transition-transform duration-300 ease-out flex flex-col items-center"
+        ref={topBarRef}
+        className="absolute left-0 right-0 pointer-events-none z-30 flex flex-col items-center px-3 sm:px-6"
         style={{
-          top: '0px',
-          transform: `translateY(${isTopCollapsed ? 'calc(-100% + 28px)' : '0px'})`,
+          top: 'max(8px, env(safe-area-inset-top))',
         }}
       >
-        {/* Main Header Bar Container with generous bottom margin to preserve clean separation from radio card */}
-        <header className="w-full px-4 pt-3 sm:px-6 sm:pt-4 flex items-center justify-between gap-3 sm:gap-4 pointer-events-auto mb-2 sm:mb-3">
-          {/* Brand Spec Badge with Generous Spacing */}
-          <div
-            className="flex items-center gap-3 bg-[#17242D]/95 border border-[#24343D] rounded-2xl shadow-xl shrink-0"
-            style={{ padding: '10px 16px' }}
-          >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#E87545] text-[#101820] font-mono font-bold flex items-center justify-center text-sm shadow shrink-0">
-              NE
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm font-bold font-mono tracking-wider text-[#F2F0E9]">
-                  NIERO.EXE
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-[#8BAE9B]/15 text-[#8BAE9B] border border-[#8BAE9B]/30 font-semibold">
-                  v2.2
-                </span>
+        {/* Main Header Bar Container (only rendered when expanded so nothing peeks into Dynamic Island) */}
+        {!isTopCollapsed && (
+          <header className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5 lg:gap-4 pointer-events-auto mb-2">
+            {/* Top Mobile Row: Brand Badge + Compact Mobile Telemetry */}
+            <div className="flex items-center justify-between gap-2.5 w-full lg:w-auto">
+              <div
+                className="flex items-center gap-2.5 sm:gap-3 bg-[#17242D]/95 border border-[#24343D] rounded-2xl shadow-xl shrink-0"
+                style={{ padding: '8px 12px' }}
+              >
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#E87545] text-[#101820] font-mono font-bold flex items-center justify-center text-xs sm:text-sm shadow shrink-0">
+                  NE
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="text-xs sm:text-sm font-bold font-mono tracking-wider text-[#F2F0E9]">
+                      NIERO.EXE
+                    </span>
+                    <span className="text-[10px] font-mono px-1.5 sm:px-2 py-0.5 rounded-md bg-[#8BAE9B]/15 text-[#8BAE9B] border border-[#8BAE9B]/30 font-semibold">
+                      v2.2
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-[#A4B0B5] font-medium hidden sm:block truncate mt-0.5">
+                    Olabode Olaniyi David • Interactive 3D World
+                  </div>
+                </div>
               </div>
-              <div className="text-[11px] text-[#A4B0B5] font-medium hidden sm:block truncate mt-0.5">
-                Olabode Olaniyi David • Interactive 3D World
+
+              {/* Compact Telemetry Pill for Mobile/Tablet (< lg) */}
+              <div className="flex lg:hidden items-center gap-2 bg-[#17242D]/95 border border-[#24343D] rounded-2xl px-3 py-2 shadow-xl text-[11px] font-mono shrink-0">
+                <span className="font-bold text-[#E87545] tabular-nums">{speedMph} MPH</span>
+                <span className="text-[#24343D]">|</span>
+                <span className="text-[#F2F0E9]">
+                  {lagosWeather ? `${lagosWeather.temperatureC}°C` : '29°C'} {lagosWeather ? lagosWeather.icon : weatherConfig.icon}
+                </span>
+                <span className="text-[#24343D]">|</span>
+                <span className="text-[#8BAE9B] font-bold">✦ {tokensCount}/{totalTokens}</span>
               </div>
             </div>
-          </div>
 
           {/* Center Stats: Real-time Lagos Weather (Strict Sync), Lagos Time, Speed, Tokens */}
           <div className="hidden lg:flex items-center gap-3 sm:gap-4 relative">
@@ -311,7 +353,7 @@ export const HUD: React.FC<Props> = ({
           </div>
 
           {/* Action Controls in Top Bar */}
-          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-end">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-start lg:justify-end">
             {/* NITRO BOOST BUTTON (Smooth animated gauge with continuous percentage fill) */}
             {onTriggerNitro && (
               <button
@@ -461,6 +503,32 @@ export const HUD: React.FC<Props> = ({
               <span className="hidden md:inline">{isMuted ? 'Muted' : 'Audio ON'}</span>
             </button>
 
+            {/* Horn Button */}
+            {onTriggerHorn && (
+              <button
+                onClick={onTriggerHorn}
+                className="rounded-2xl bg-[#17242D]/95 border border-[#24343D] hover:border-[#E87545] text-[#A4B0B5] hover:text-[#F2F0E9] transition-all shadow-lg flex items-center gap-2 text-xs font-mono font-medium shrink-0 cursor-pointer"
+                style={{ padding: '10px 14px' }}
+                title="Honk Buggy Horn (Key: F)"
+              >
+                <Megaphone className="w-4 h-4 text-[#E87545]" />
+                <span className="hidden md:inline">Horn [F]</span>
+              </button>
+            )}
+
+            {/* Reset Props (NIERO Letters, Bowling Pins, Soccer Ball) */}
+            {onResetProps && (
+              <button
+                onClick={onResetProps}
+                className="rounded-2xl bg-[#17242D]/95 border border-[#24343D] hover:border-[#8BAE9B] text-[#A4B0B5] hover:text-[#F2F0E9] transition-all shadow-lg flex items-center gap-2 text-xs font-mono font-medium shrink-0 cursor-pointer"
+                style={{ padding: '10px 14px' }}
+                title="Restack NIERO Letters, Bowling Pins & Soccer Ball"
+              >
+                <Boxes className="w-4 h-4 text-[#8BAE9B]" />
+                <span className="hidden md:inline">Reset Props</span>
+              </button>
+            )}
+
             {/* Reset Buggy */}
             <button
               onClick={onResetVehicle}
@@ -483,13 +551,16 @@ export const HUD: React.FC<Props> = ({
               <span className="hidden md:inline">Guide</span>
             </button>
           </div>
-        </header>
+          </header>
+        )}
 
         {/* Hanging Center Tab for Top Header Bar */}
-        <div className="flex justify-center -mt-px pt-0.5 pointer-events-auto">
+        <div className="flex justify-center pointer-events-auto">
           <button
             onClick={() => setIsTopCollapsed(!isTopCollapsed)}
-            className="flex items-center gap-2 px-4 py-1.5 rounded-b-xl bg-[#17242D]/95 border-b border-x border-[#24343D] text-xs font-mono text-[#A4B0B5] hover:text-[#F2F0E9] hover:border-[#E87545]/60 transition-colors shadow-lg cursor-pointer"
+            className={`flex items-center gap-2 px-4 py-1.5 bg-[#17242D]/95 border border-[#24343D] text-xs font-mono text-[#A4B0B5] hover:text-[#F2F0E9] hover:border-[#E87545]/60 transition-colors shadow-lg cursor-pointer ${
+              isTopCollapsed ? 'rounded-xl' : 'rounded-b-xl border-t-0'
+            }`}
             title={isTopCollapsed ? 'Show Header Bar (Key: H)' : 'Collapse Header Bar (Key: H)'}
           >
             {isTopCollapsed ? (
@@ -507,44 +578,53 @@ export const HUD: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* 2. LIVE SUB-HEADER WIDGETS (Lagos Radio & Collapsible Race Time-Trial HUD) */}
-      <div
-        className="absolute left-4 sm:left-6 z-35 flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 pointer-events-none transition-all duration-300"
-        style={{
-          top: isTopCollapsed ? '20px' : '98px',
-        }}
-      >
-        <RadioWidget />
-        {raceState && (
-          <RaceTimerHUD
-            raceState={raceState}
-            onToggleRace={onToggleRace}
-          />
-        )}
-      </div>
-
-      {/* 3. MINIMAP COMPONENT (Draggable Radar with generous clearance) */}
-      {isMinimapVisible && (
+      {/* 2. LIVE SUB-HEADER WIDGETS & MINIMAP (Responsive stack on mobile, left/right on sm+, dynamically below header) */}
+      {(!isTopCollapsed || raceState?.isActive) && (
         <div
-          className="absolute right-4 sm:right-6 z-20 transition-all duration-300"
+          className="absolute left-3 right-3 sm:left-6 sm:right-6 z-[25] flex flex-col sm:flex-row items-start sm:justify-between gap-2.5 pointer-events-none transition-all duration-200"
           style={{
-            top: isTopCollapsed ? '20px' : '98px',
+            top: `${headerHeight}px`,
           }}
         >
-          <Minimap
-            playerPos={playerPos}
-            uncollectedTokenIds={uncollectedTokenIds}
-            onTeleport={onTeleport}
-            onSelectProject={onSelectProject}
-          />
+          {/* Left: Radio & Race Time-Trial */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-4 pointer-events-none">
+            {!isTopCollapsed && <RadioWidget />}
+            {raceState && (!isTopCollapsed || raceState.isActive) && (
+              <RaceTimerHUD
+                raceState={raceState}
+                onToggleRace={onToggleRace}
+              />
+            )}
+          </div>
+
+          {/* Right: Draggable Minimap Radar */}
+          {!isTopCollapsed && isMinimapVisible && (
+            <div className="self-end sm:self-auto pointer-events-none">
+              <Minimap
+                playerPos={playerPos}
+                uncollectedTokenIds={uncollectedTokenIds}
+                onTeleport={onTeleport}
+                onSelectProject={onSelectProject}
+              />
+            </div>
+          )}
         </div>
       )}
 
-      {/* 4. PROXIMITY INTERACTION BANNER (Appears when near landmark) */}
+      {/* 4. PROXIMITY INTERACTION BANNER (Safely above mobile touch controls & bottom dock) */}
       {nearbyTarget && (
-        <div className="absolute bottom-24 sm:bottom-28 left-1/2 -translate-x-1/2 pointer-events-auto z-40 max-w-lg w-[92vw] animate-modal-enter">
+        <div
+          className="absolute left-1/2 -translate-x-1/2 pointer-events-auto z-40 max-w-lg w-[calc(100vw-24px)] sm:w-[92vw] animate-modal-enter"
+          style={{
+            bottom: isTouchDevice
+              ? 'calc(190px + env(safe-area-inset-bottom, 0px))'
+              : isDockCollapsed
+              ? 'calc(56px + env(safe-area-inset-bottom, 0px))'
+              : 'calc(112px + env(safe-area-inset-bottom, 0px))',
+          }}
+        >
           <div
-            className="bg-[#17242D]/95 border-2 border-[#E87545] rounded-2xl p-4 sm:p-5 shadow-2xl flex items-center justify-between gap-4 text-[#F2F0E9]"
+            className="bg-[#17242D]/95 border-2 border-[#E87545] rounded-2xl p-3.5 sm:p-5 shadow-2xl flex items-center justify-between gap-3 sm:gap-4 text-[#F2F0E9]"
             style={{
               boxShadow: '0 12px 35px rgba(16, 24, 32, 0.95), 0 0 25px rgba(232, 117, 69, 0.35)',
             }}
@@ -552,7 +632,7 @@ export const HUD: React.FC<Props> = ({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono uppercase text-[#E87545] font-bold tracking-wider">
-                  Landmark in Range
+                  {nearbyTarget.type === 'social' ? 'Quick Action Tile' : 'Landmark in Range'}
                 </span>
               </div>
               <h3 className="text-sm sm:text-base font-bold text-[#F2F0E9] truncate mt-1">
@@ -561,89 +641,128 @@ export const HUD: React.FC<Props> = ({
               <p className="text-xs text-[#A4B0B5] truncate mt-0.5">{nearbyTarget.subtitle}</p>
             </div>
 
-            <button
-              onClick={onInteract}
-              className="px-4 py-2.5 rounded-xl bg-[#E87545] hover:bg-[#E87545]/90 text-[#101820] text-xs sm:text-sm font-bold font-mono tracking-wider transition-transform active:scale-95 shadow flex items-center gap-2 shrink-0 cursor-pointer"
-            >
-              <span>INSPECT [E]</span>
-            </button>
+            {nearbyTarget.externalUrl ? (
+              <a
+                href={nearbyTarget.externalUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3.5 sm:px-4 py-2.5 rounded-xl bg-[#E87545] hover:bg-[#E87545]/90 text-[#101820] text-xs sm:text-sm font-bold font-mono tracking-wider transition-transform active:scale-95 shadow flex items-center gap-2 shrink-0 cursor-pointer"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span>OPEN</span>
+              </a>
+            ) : (
+              <button
+                onClick={onInteract}
+                className="px-3.5 sm:px-4 py-2.5 rounded-xl bg-[#E87545] hover:bg-[#E87545]/90 text-[#101820] text-xs sm:text-sm font-bold font-mono tracking-wider transition-transform active:scale-95 shadow flex items-center gap-2 shrink-0 cursor-pointer"
+              >
+                <span>{nearbyTarget.type === 'social' ? 'OPEN [E]' : 'INSPECT [E]'}</span>
+              </button>
+            )}
           </div>
         </div>
       )}
 
-      {/* 5. MOBILE ON-SCREEN TOUCH CONTROLS (Includes Nitro Boost button for touch) */}
+      {/* 5. MOBILE ON-SCREEN TOUCH CONTROLS (Safe-area padded, non-blocking, touch-cancel protected) */}
       {isTouchDevice && (
-        <div className="absolute bottom-24 left-4 right-4 flex items-end justify-between pointer-events-none z-30">
-          <div className="flex items-center gap-2.5 pointer-events-auto">
-            <button
-              onTouchStart={e => {
-                e.preventDefault();
-                onMobileInput({ left: true });
-              }}
-              onTouchEnd={e => {
-                e.preventDefault();
-                onMobileInput({ left: false });
-              }}
-              className="w-14 h-14 rounded-2xl bg-[#17242D]/90 border border-[#24343D] active:bg-[#E87545] active:text-[#101820] text-[#F2F0E9] flex items-center justify-center text-lg shadow-xl"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </button>
-            <button
-              onTouchStart={e => {
-                e.preventDefault();
-                onMobileInput({ right: true });
-              }}
-              onTouchEnd={e => {
-                e.preventDefault();
-                onMobileInput({ right: false });
-              }}
-              className="w-14 h-14 rounded-2xl bg-[#17242D]/90 border border-[#24343D] active:bg-[#E87545] active:text-[#101820] text-[#F2F0E9] flex items-center justify-center text-lg shadow-xl"
-            >
-              <ArrowRight className="w-6 h-6" />
-            </button>
+        <div
+          className="absolute flex items-end justify-between pointer-events-none z-30 transition-all duration-300"
+          style={{
+            bottom: isDockCollapsed
+              ? 'calc(52px + env(safe-area-inset-bottom, 0px))'
+              : 'calc(126px + env(safe-area-inset-bottom, 0px))',
+            left: 'max(14px, env(safe-area-inset-left))',
+            right: 'max(14px, env(safe-area-inset-right))',
+          }}
+        >
+          <div className="flex flex-col items-start gap-2.5 pointer-events-auto touch-none">
+            {/* Compact Mobile Utility Row: Horn & Nitro right above Steering */}
+            <div className="flex items-center gap-2">
+              {onTriggerHorn && (
+                <button
+                  onTouchStart={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onTriggerHorn();
+                  }}
+                  onClick={onTriggerHorn}
+                  className="h-10 px-3 rounded-xl bg-[#17242D]/90 border border-[#24343D] active:bg-[#E87545] active:text-[#101820] text-[#F2F0E9] flex items-center gap-1.5 text-[11px] font-mono font-bold shadow-lg touch-none select-none"
+                  title="Honk Horn"
+                >
+                  <Megaphone className="w-3.5 h-3.5 text-[#E87545]" />
+                  <span>HORN</span>
+                </button>
+              )}
+              {onTriggerNitro && (
+                <button
+                  onTouchStart={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onTriggerNitro();
+                  }}
+                  disabled={nitroState.charge < 0.2 && !nitroState.isActive}
+                  className={`h-10 px-3 rounded-xl border flex items-center gap-1.5 text-[11px] font-mono font-bold shadow-lg touch-none select-none ${
+                    nitroState.isActive
+                      ? 'bg-[#00E5FF] text-[#101820] border-[#00E5FF]'
+                      : nitroState.charge >= 0.2
+                      ? 'bg-[#17242D]/90 border-[#00E5FF]/50 text-[#00E5FF]'
+                      : 'bg-[#17242D]/60 border-[#24343D]/40 text-[#A4B0B5] opacity-50'
+                  }`}
+                  title="Nitro Boost"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>{nitroChargePct}%</span>
+                </button>
+              )}
+            </div>
 
-            {/* Mobile Nitro Boost Button */}
-            {onTriggerNitro && (
+            <div className="flex items-center gap-2.5 sm:gap-3">
               <button
                 onTouchStart={e => {
                   e.preventDefault();
-                  onTriggerNitro();
+                  e.stopPropagation();
+                  onMobileInput({ left: true });
                 }}
-                className={`relative overflow-hidden w-14 h-14 rounded-2xl border flex flex-col items-center justify-center shadow-xl select-none cursor-pointer ${
-                  nitroState.isActive
-                    ? 'bg-[#101820] text-[#00E5FF] border-[#00E5FF] shadow-[0_0_16px_rgba(0,229,255,0.7)]'
-                    : nitroState.charge >= 0.2
-                    ? 'bg-[#17242D]/90 text-[#E87545] border-[#E87545]'
-                    : 'bg-[#17242D]/50 text-[#A4B0B5] border-[#24343D] opacity-50'
-                }`}
-                title="Nitro Boost"
+                onTouchEnd={e => {
+                  e.preventDefault();
+                  onMobileInput({ left: false });
+                }}
+                onTouchCancel={() => onMobileInput({ left: false })}
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#17242D]/90 border border-[#24343D] active:bg-[#E87545] active:text-[#101820] text-[#F2F0E9] flex items-center justify-center text-lg shadow-xl touch-none select-none"
               >
-                {/* Background vertical fill */}
-                <div
-                  className={`absolute bottom-0 inset-x-0 pointer-events-none transition-all duration-100 ease-linear ${
-                    nitroState.isActive ? 'bg-[#00E5FF]/25' : 'bg-[#E87545]/20'
-                  }`}
-                  style={{ height: `${nitroChargePct}%` }}
-                />
-                <Flame className={`w-5 h-5 relative z-10 ${nitroState.isActive ? 'animate-bounce' : ''}`} />
-                <span className="text-[9px] font-mono font-bold relative z-10 leading-none mt-0.5">
-                  {nitroChargePct}%
-                </span>
+                <ArrowLeft className="w-6 h-6" />
               </button>
-            )}
+              <button
+                onTouchStart={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onMobileInput({ right: true });
+                }}
+                onTouchEnd={e => {
+                  e.preventDefault();
+                  onMobileInput({ right: false });
+                }}
+                onTouchCancel={() => onMobileInput({ right: false })}
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#17242D]/90 border border-[#24343D] active:bg-[#E87545] active:text-[#101820] text-[#F2F0E9] flex items-center justify-center text-lg shadow-xl touch-none select-none"
+              >
+                <ArrowRight className="w-6 h-6" />
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-col items-center gap-2.5 pointer-events-auto">
+          <div className="flex flex-col items-center gap-2.5 pointer-events-auto touch-none">
             <button
               onTouchStart={e => {
                 e.preventDefault();
+                e.stopPropagation();
                 onMobileInput({ forward: true });
               }}
               onTouchEnd={e => {
                 e.preventDefault();
                 onMobileInput({ forward: false });
               }}
-              className="w-14 h-14 rounded-2xl bg-[#17242D]/90 border border-[#24343D] active:bg-[#E87545] active:text-[#101820] text-[#F2F0E9] flex items-center justify-center shadow-xl"
+              onTouchCancel={() => onMobileInput({ forward: false })}
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#17242D]/90 border border-[#24343D] active:bg-[#E87545] active:text-[#101820] text-[#F2F0E9] flex items-center justify-center shadow-xl touch-none select-none"
             >
               <ArrowUp className="w-6 h-6" />
             </button>
@@ -652,26 +771,30 @@ export const HUD: React.FC<Props> = ({
               <button
                 onTouchStart={e => {
                   e.preventDefault();
+                  e.stopPropagation();
                   onMobileInput({ brake: true });
                 }}
                 onTouchEnd={e => {
                   e.preventDefault();
                   onMobileInput({ brake: false });
                 }}
-                className="w-12 h-12 rounded-2xl bg-[#24343D]/95 border border-[#24343D] active:bg-[#E87545] text-[#A4B0B5] active:text-[#101820] text-xs font-mono font-bold flex items-center justify-center shadow-lg"
+                onTouchCancel={() => onMobileInput({ brake: false })}
+                className="w-14 h-14 sm:w-15 sm:h-15 rounded-2xl bg-[#24343D]/95 border border-[#24343D] active:bg-[#E87545] text-[#A4B0B5] active:text-[#101820] text-xs font-mono font-bold flex items-center justify-center shadow-lg touch-none select-none"
               >
                 STOP
               </button>
               <button
                 onTouchStart={e => {
                   e.preventDefault();
+                  e.stopPropagation();
                   onMobileInput({ backward: true });
                 }}
                 onTouchEnd={e => {
                   e.preventDefault();
                   onMobileInput({ backward: false });
                 }}
-                className="w-14 h-14 rounded-2xl bg-[#17242D]/90 border border-[#24343D] active:bg-[#E87545] active:text-[#101820] text-[#F2F0E9] flex items-center justify-center shadow-xl"
+                onTouchCancel={() => onMobileInput({ backward: false })}
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#17242D]/90 border border-[#24343D] active:bg-[#E87545] active:text-[#101820] text-[#F2F0E9] flex items-center justify-center shadow-xl touch-none select-none"
               >
                 <ArrowDown className="w-6 h-6" />
               </button>
@@ -680,21 +803,22 @@ export const HUD: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 6. COLLAPSIBLE BOTTOM NAVIGATION DOCK (Cleaned strictly to portfolio tabs) */}
+      {/* 6. COLLAPSIBLE BOTTOM NAVIGATION DOCK (Safe-Area Aware, collapsed by default) */}
       <div
-        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto z-40 transition-transform duration-300 ease-out"
+        className="absolute left-1/2 -translate-x-1/2 pointer-events-none z-40 px-3 sm:px-4"
         style={{
-          bottom: '16px',
-          maxWidth: 'min(960px, 94vw)',
+          bottom: 'max(10px, env(safe-area-inset-bottom))',
+          maxWidth: 'min(960px, 100vw)',
           width: '100%',
-          transform: `translateX(-50%) translateY(${isDockCollapsed ? 'calc(100% - 24px)' : '0px'})`,
         }}
       >
         {/* Collapse / Expand Tab */}
-        <div className="flex justify-center -mb-px">
+        <div className="flex justify-center pointer-events-auto">
           <button
             onClick={() => setIsDockCollapsed(!isDockCollapsed)}
-            className="flex items-center gap-2 px-4 py-1.5 rounded-t-xl bg-[#17242D] border-t border-x border-[#24343D] text-xs font-mono text-[#A4B0B5] hover:text-[#F2F0E9] hover:border-[#E87545]/60 transition-colors shadow cursor-pointer"
+            className={`flex items-center gap-2 px-4 py-1.5 bg-[#17242D]/95 border border-[#24343D] text-xs font-mono text-[#A4B0B5] hover:text-[#F2F0E9] hover:border-[#E87545]/60 transition-colors shadow cursor-pointer ${
+              isDockCollapsed ? 'rounded-xl' : 'rounded-t-xl border-b-0 -mb-px'
+            }`}
           >
             {isDockCollapsed ? (
               <>
@@ -710,56 +834,58 @@ export const HUD: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* Main Dock Container: Exclusively Portfolio Tabs */}
-        <div
-          className="bg-[#17242D]/95 border border-[#24343D] rounded-2xl shadow-2xl flex items-center justify-between gap-2 overflow-x-auto no-scrollbar"
-          style={{
-            padding: '10px 14px',
-            boxShadow: '0 12px 35px rgba(16, 24, 32, 0.95), 0 0 15px rgba(232, 117, 69, 0.1)',
-          }}
-        >
-          <div className="flex items-center gap-2 sm:gap-2.5 flex-1 justify-center sm:justify-start">
-            {[
-              { id: 'about', label: 'About', icon: User },
-              { id: 'projects', label: 'Projects', icon: Layers, badge: `${PROJECTS.length}` },
-              { id: 'experience', label: 'Experience', icon: Briefcase },
-              { id: 'skills', label: 'Skills', icon: Code2 },
-              { id: 'resume', label: 'Resume', icon: FileText, highlight: true },
-              { id: 'contact', label: 'Contact', icon: Mail },
-            ].map(item => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onOpenPortfolio(item.id as PortfolioTab)}
-                  className={`flex items-center gap-2 rounded-xl text-xs sm:text-sm font-medium transition-all shrink-0 cursor-pointer ${
-                    item.highlight
-                      ? 'bg-[#E87545]/15 text-[#E87545] border border-[#E87545]/40 hover:bg-[#E87545] hover:text-[#101820]'
-                      : 'bg-[#24343D]/40 border border-transparent text-[#A4B0B5] hover:text-[#F2F0E9] hover:bg-[#24343D] hover:border-[#24343D]'
-                  }`}
-                  style={{ padding: '8px 14px' }}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  <span className="font-semibold">{item.label}</span>
-                  {item.badge && (
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-md bg-[#24343D] text-[#8BAE9B]">
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+        {/* Main Dock Container: Exclusively Portfolio Tabs (Only rendered when expanded) */}
+        {!isDockCollapsed && (
+          <div
+            className="pointer-events-auto bg-[#17242D]/95 border border-[#24343D] rounded-2xl shadow-2xl flex items-center justify-between gap-2 overflow-x-auto no-scrollbar"
+            style={{
+              padding: '10px 14px',
+              boxShadow: '0 12px 35px rgba(16, 24, 32, 0.95), 0 0 15px rgba(232, 117, 69, 0.1)',
+            }}
+          >
+            <div className="flex items-center gap-2 sm:gap-2.5 flex-1 justify-start">
+              {[
+                { id: 'about', label: 'About', icon: User },
+                { id: 'projects', label: 'Projects', icon: Layers, badge: `${PROJECTS.length}` },
+                { id: 'experience', label: 'Experience', icon: Briefcase },
+                { id: 'skills', label: 'Skills', icon: Code2 },
+                { id: 'resume', label: 'Resume', icon: FileText, highlight: true },
+                { id: 'contact', label: 'Contact', icon: Mail },
+              ].map(item => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onOpenPortfolio(item.id as PortfolioTab)}
+                    className={`flex items-center gap-2 rounded-xl text-xs sm:text-sm font-medium transition-all shrink-0 cursor-pointer ${
+                      item.highlight
+                        ? 'bg-[#E87545]/15 text-[#E87545] border border-[#E87545]/40 hover:bg-[#E87545] hover:text-[#101820]'
+                        : 'bg-[#24343D]/40 border border-transparent text-[#A4B0B5] hover:text-[#F2F0E9] hover:bg-[#24343D] hover:border-[#24343D]'
+                    }`}
+                    style={{ padding: '8px 14px' }}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <span className="font-semibold">{item.label}</span>
+                    {item.badge && (
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-md bg-[#24343D] text-[#8BAE9B]">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
-          <div className="hidden lg:flex items-center gap-2.5 pl-4 border-l border-[#24343D] text-xs font-mono text-[#A4B0B5] shrink-0">
-            <span className="px-2 py-0.5 rounded-md bg-[#24343D] text-[#F2F0E9]">W A S D</span>
-            <span>Drive</span>
-            <span className="px-2 py-0.5 rounded-md bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/40 font-bold">Shift / N</span>
-            <span className="text-[#00E5FF] font-semibold">Manual Nitro</span>
-            <span className="px-2 py-0.5 rounded-md bg-[#24343D] text-[#F2F0E9]">Z</span>
-            <span>Auto Drive</span>
+            <div className="hidden lg:flex items-center gap-2.5 pl-4 border-l border-[#24343D] text-xs font-mono text-[#A4B0B5] shrink-0">
+              <span className="px-2 py-0.5 rounded-md bg-[#24343D] text-[#F2F0E9]">W A S D</span>
+              <span>Drive</span>
+              <span className="px-2 py-0.5 rounded-md bg-[#00E5FF]/20 text-[#00E5FF] border border-[#00E5FF]/40 font-bold">Shift / N</span>
+              <span className="text-[#00E5FF] font-semibold">Manual Nitro</span>
+              <span className="px-2 py-0.5 rounded-md bg-[#24343D] text-[#F2F0E9]">Z</span>
+              <span>Auto Drive</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

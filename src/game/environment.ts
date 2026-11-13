@@ -276,6 +276,12 @@ export class EnvironmentSystem {
       if (this.terrain.isRoadArea(x, z)) continue;
       if (Math.hypot(x, z - (-16)) < 12) continue; // Plaza clearance
 
+      // Avoid Bruno-inspired Playground, Soccer Pitch, River Jump & Social Plaza
+      if (x >= 8 && x <= 32 && z >= 12 && z <= 35) continue;
+      if (x >= -32 && x <= -8 && z >= 12 && z <= 35) continue;
+      if (x >= 6 && x <= 14 && z >= -18 && z <= 18) continue;
+      if (x >= 10 && x <= 26 && z >= -28 && z <= -12) continue;
+
       // Avoid landmark zones
       if (Math.hypot(x - 38, z - (-25)) < 9) continue;
       if (Math.hypot(x - (-35), z - (-30)) < 9) continue;
@@ -353,6 +359,10 @@ export class EnvironmentSystem {
 
       if (this.terrain.isRoadArea(x, z)) continue;
       if (Math.hypot(x, z) < 14) continue;
+      if (x >= 8 && x <= 32 && z >= 12 && z <= 35) continue;
+      if (x >= -32 && x <= -8 && z >= 12 && z <= 35) continue;
+      if (x >= 6 && x <= 14 && z >= -18 && z <= 18) continue;
+      if (x >= 10 && x <= 26 && z >= -28 && z <= -12) continue;
 
       const scale = rand(1.0, 2.4);
       rockCoords.push({ x, z, scale, rotY: rand(0, Math.PI * 2) });

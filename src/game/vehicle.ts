@@ -59,6 +59,17 @@ export class Vehicle {
   // Suspension / Chassis dynamics
   private pitch: number = 0;
   private roll: number = 0;
+  private verticalVelocity: number = 0;
+  public isAirborne: boolean = false;
+  private airTime: number = 0;
+  private prevGroundHeight: number = 0;
+  private landingSquash: number = 0;
+
+  // Tail-lights & Headlight beam cones & 3D Horn ripple
+  private brakeLightMats: THREE.MeshBasicMaterial[] = [];
+  private hornRing!: THREE.Mesh;
+  private hornRingMat!: THREE.MeshBasicMaterial;
+  private hornAnimTime: number = 0;
 
   // Nitro Boost Mechanic
   public isNitroActive: boolean = false;
@@ -83,6 +94,7 @@ export class Vehicle {
 
     // Dust trail
     this.initDust();
+    this.initHornRing();
 
     // Set initial spawn
     this.reset(WORLD_CONFIG.spawnPoint.x, WORLD_CONFIG.spawnPoint.z, WORLD_CONFIG.spawnPoint.angle);
@@ -143,6 +155,8 @@ export class Vehicle {
     });
     const lightMat = new THREE.MeshBasicMaterial({ color: PALETTE.cHeadlight });
 
+    this.brakeLightMats = [];
+
     switch (model) {
       case 'roadster':
         this.buildRoadsterModel(bodyMat, frameMat, metalMat, glassMat, lightMat);
@@ -159,7 +173,64 @@ export class Vehicle {
         break;
     }
 
+    this.initTailAndHeadLights();
     this.initNitroFlames();
+  }
+
+  private initTailAndHeadLights() {
+    // Working Red Brake / Reverse Tail-lights
+    const tailMatL = new THREE.MeshBasicMaterial({ color: 0x551414 });
+    const tailMatR = new THREE.MeshBasicMaterial({ color: 0x551414 });
+    const tailGeo = new THREE.BoxGeometry(0.32, 0.12, 0.08);
+
+    const tailL = new THREE.Mesh(tailGeo, tailMatL);
+    tailL.position.set(-0.52, 0.72, -1.48);
+    const tailR = new THREE.Mesh(tailGeo, tailMatR);
+    tailR.position.set(0.52, 0.72, -1.48);
+    this.chassisGroup.add(tailL, tailR);
+    this.brakeLightMats.push(tailMatL, tailMatR);
+
+    // Subtle Headlight Ground Light Beams (illuminating ahead in twilight)
+    const beamGeo = new THREE.ConeGeometry(1.1, 4.2, 12, 1, true);
+    beamGeo.rotateX(Math.PI / 2);
+    beamGeo.translate(0, 0, 2.1);
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: PALETTE.cHeadlight,
+      transparent: true,
+      opacity: 0.06,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const beamL = new THREE.Mesh(beamGeo, beamMat);
+    beamL.position.set(-0.55, 0.52, 1.5);
+    const beamR = new THREE.Mesh(beamGeo, beamMat);
+    beamR.position.set(0.55, 0.52, 1.5);
+    this.chassisGroup.add(beamL, beamR);
+  }
+
+  private initHornRing() {
+    const ringGeo = new THREE.RingGeometry(0.8, 1.05, 24);
+    ringGeo.rotateX(-Math.PI / 2);
+    this.hornRingMat = new THREE.MeshBasicMaterial({
+      color: PALETTE.cPrimaryAccent,
+      transparent: true,
+      opacity: 0,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    this.hornRing = new THREE.Mesh(ringGeo, this.hornRingMat);
+    this.hornRing.position.set(0, 1.9, 0.2);
+    this.hornRing.visible = false;
+    this.group.add(this.hornRing);
+  }
+
+  public triggerHorn() {
+    sound.playHorn();
+    this.hornAnimTime = 0.45;
+    this.hornRing.visible = true;
+    this.hornRing.scale.set(0.6, 0.6, 0.6);
+    this.hornRing.position.y = 1.9;
+    this.hornRingMat.opacity = 0.85;
   }
 
   private initNitroFlames() {
@@ -526,8 +597,14 @@ export class Vehicle {
   }
 
   public reset(x: number, z: number, angle: number = 0) {
-    this.position.set(x, this.terrain.getVehicleGroundHeight(x, z), z);
+    const groundY = this.terrain.getVehicleGroundHeight(x, z);
+    this.position.set(x, groundY, z);
+    this.prevGroundHeight = groundY;
     this.velocity = 0;
+    this.verticalVelocity = 0;
+    this.isAirborne = false;
+    this.airTime = 0;
+    this.landingSquash = 0;
     this.steeringAngle = 0;
     this.heading = angle;
     this.lateralVelocity = 0;
@@ -552,11 +629,17 @@ export class Vehicle {
     };
   }
 
-  public applyNitroBoost(boostMph: number = 18) {
+  public applyNitroBoost(_boostMph: number = 18) {
     this.triggerNitroBoost();
   }
 
-  public update(delta: number, input: VehicleInput, colliders: Collider[]) {
+  public update(
+    delta: number,
+    input: VehicleInput,
+    colliders: Collider[],
+    rampHeightAt?: (x: number, z: number) => number,
+    onBigAirJump?: (airTime: number) => void
+  ) {
     // 0. Nitro Boost Timer, smooth continuous drainage & recharge
     if (this.isNitroActive) {
       this.nitroTimer -= delta;
@@ -589,15 +672,23 @@ export class Vehicle {
     // Update real-world 3D trailing particle stream
     this.nitroParticles.update(delta, this.isNitroActive, this.group, Math.abs(this.velocity));
 
-    // 1. Steering dynamics
+    // 1. Progressive Speed-Sensitive Steering dynamics
+    const speedAbs = Math.abs(this.velocity);
+    // Reduce maximum steering lock smoothly as speed increases for stable high-speed handling
+    const speedSteerLimit = VEHICLE_CONFIG.maxSteerAngle / (1 + speedAbs * 0.045);
+
     let targetSteer = 0;
-    if (input.left) targetSteer += VEHICLE_CONFIG.maxSteerAngle;
-    if (input.right) targetSteer -= VEHICLE_CONFIG.maxSteerAngle;
+    if (input.left) targetSteer += speedSteerLimit;
+    if (input.right) targetSteer -= speedSteerLimit;
+
+    // Gentle progressive ramp when steering into a turn, crisp return when centering
+    const steerDamping =
+      targetSteer !== 0 ? VEHICLE_CONFIG.steerRampSpeed : VEHICLE_CONFIG.steerReturnSpeed;
 
     this.steeringAngle = THREE.MathUtils.damp(
       this.steeringAngle,
       targetSteer,
-      VEHICLE_CONFIG.steerReturnSpeed,
+      steerDamping,
       delta
     );
 
@@ -644,10 +735,17 @@ export class Vehicle {
     sound.updateEngine(normalizedSpeed, isAccelerating || this.isNitroActive);
     sound.updateWind(normalizedSpeed);
 
-    // 3. Angular Yaw turning (Ackermann-like approximation)
+    // 3. Smooth Speed-Attenuated Angular Yaw Turning
     if (Math.abs(this.velocity) > 0.1) {
-      const turnFactor = this.steeringAngle * (this.velocity / VEHICLE_CONFIG.wheelBase);
-      this.heading += turnFactor * delta;
+      const steerRatio = this.steeringAngle / VEHICLE_CONFIG.maxSteerAngle;
+      // Ramp turn authority smoothly from stationary (no spinning in place) and keep high-speed turns controlled
+      const lowSpeedRamp = Math.min(1, Math.abs(this.velocity) / 6.5);
+      const turnRate =
+        steerRatio *
+        VEHICLE_CONFIG.turnSpeed *
+        lowSpeedRamp *
+        Math.sign(this.velocity);
+      this.heading += turnRate * delta;
     }
 
     // 4. Proposed displacement
@@ -686,13 +784,82 @@ export class Vehicle {
       this.velocity *= 0.2;
     }
 
-    // Apply resolved position
+    // Update Brake / Reverse Tail-Lights glow
+    const isBrakingOrReversing = input.brake || input.backward;
+    const brakeColor = input.brake ? 0xFF2222 : input.backward ? 0xFF6644 : 0x551414;
+    this.brakeLightMats.forEach(m => m.color.setHex(brakeColor));
+
+    // Animate 3D Horn Soundwave Ring
+    if (this.hornAnimTime > 0) {
+      this.hornAnimTime = Math.max(0, this.hornAnimTime - delta);
+      const t = 1 - this.hornAnimTime / 0.45;
+      const s = 0.6 + t * 3.8;
+      this.hornRing.scale.set(s, s, s);
+      this.hornRing.position.y = 1.9 + t * 1.4;
+      this.hornRingMat.opacity = (1 - t) * 0.85;
+      if (this.hornAnimTime === 0) {
+        this.hornRing.visible = false;
+      }
+    }
+
+    // Apply resolved X/Z position and compute Ramp-Aware Stunt Jump / Gravity Physics
     this.position.x = nextX;
     this.position.z = nextZ;
-    this.position.y = this.terrain.getVehicleGroundHeight(this.position.x, this.position.z);
 
-    // 6. Terrain normal orientation & suspension tilt
-    const groundNormal = this.terrain.getNormal(this.position.x, this.position.z);
+    const terrainH = this.terrain.getVehicleGroundHeight(this.position.x, this.position.z);
+    const rampH = rampHeightAt ? rampHeightAt(this.position.x, this.position.z) : -Infinity;
+    const groundHeight = Math.max(terrainH, rampH);
+
+    // Detect driving off a stunt ramp lip into the air
+    const groundDrop = this.prevGroundHeight - groundHeight;
+    if (!this.isAirborne && groundDrop > 0.25 && Math.abs(this.velocity) > 6.0) {
+      this.isAirborne = true;
+      this.airTime = 0;
+      this.verticalVelocity = Math.min(11.5, Math.max(4.5, Math.abs(this.velocity) * 0.36));
+    }
+
+    if (this.isAirborne) {
+      this.airTime += delta;
+      this.verticalVelocity -= 22.0 * delta;
+      this.position.y += this.verticalVelocity * delta;
+
+      if (this.position.y <= groundHeight) {
+        this.position.y = groundHeight;
+        if (this.verticalVelocity < -3.5) {
+          const impact = Math.min(1, Math.abs(this.verticalVelocity) / 14);
+          this.landingSquash = 0.22 * impact;
+          sound.playLandingThud(impact);
+          this.emitDust();
+          this.emitDust();
+        }
+        if (this.airTime > 0.42) {
+          onBigAirJump?.(this.airTime);
+        }
+        this.verticalVelocity = 0;
+        this.isAirborne = false;
+        this.airTime = 0;
+      }
+    } else {
+      // Check if climbing onto a ramp smoothly or driving on terrain
+      if (groundHeight > this.position.y + 0.05) {
+        this.position.y = THREE.MathUtils.damp(this.position.y, groundHeight, 26, delta);
+      } else {
+        this.position.y = groundHeight;
+      }
+    }
+
+    this.prevGroundHeight = groundHeight;
+
+    // 6. Terrain / Ramp normal orientation & suspension tilt
+    let groundNormal = this.terrain.getNormal(this.position.x, this.position.z);
+    if (rampHeightAt && rampH >= terrainH) {
+      const eps = 0.4;
+      const rL = Math.max(this.terrain.getVehicleGroundHeight(this.position.x - eps, this.position.z), rampHeightAt(this.position.x - eps, this.position.z));
+      const rR = Math.max(this.terrain.getVehicleGroundHeight(this.position.x + eps, this.position.z), rampHeightAt(this.position.x + eps, this.position.z));
+      const rD = Math.max(this.terrain.getVehicleGroundHeight(this.position.x, this.position.z - eps), rampHeightAt(this.position.x, this.position.z - eps));
+      const rU = Math.max(this.terrain.getVehicleGroundHeight(this.position.x, this.position.z + eps), rampHeightAt(this.position.x, this.position.z + eps));
+      groundNormal = new THREE.Vector3(rL - rR, 2 * eps, rD - rU).normalize();
+    }
 
     // Calculate vehicle orientation matrix aligned to normal + heading
     const forwardVec = new THREE.Vector3(Math.sin(this.heading), 0, Math.cos(this.heading));
@@ -703,14 +870,20 @@ export class Vehicle {
     this.group.quaternion.setFromRotationMatrix(rotMatrix);
     this.group.position.copy(this.position);
 
-    // 7. Dynamic Chassis Suspension Lean
-    const targetPitch = (this.velocity / VEHICLE_CONFIG.maxSpeed) * 0.08 - (input.brake ? 0.12 : 0);
+    // 7. Dynamic Chassis Suspension Lean + Airborne Pitch + Landing Squash
+    this.landingSquash = THREE.MathUtils.damp(this.landingSquash, 0, 10, delta);
+    const airPitch = this.isAirborne ? THREE.MathUtils.clamp(-this.verticalVelocity * 0.032, -0.32, 0.32) : 0;
+    const targetPitch =
+      (this.velocity / VEHICLE_CONFIG.maxSpeed) * 0.08 -
+      (isBrakingOrReversing ? 0.1 : 0) +
+      airPitch;
     const targetRoll = -this.steeringAngle * (this.velocity / VEHICLE_CONFIG.maxSpeed) * 0.22;
 
     this.pitch = THREE.MathUtils.damp(this.pitch, targetPitch, 8, delta);
     this.roll = THREE.MathUtils.damp(this.roll, targetRoll, 8, delta);
     this.chassisGroup.rotation.x = this.pitch;
     this.chassisGroup.rotation.z = this.roll;
+    this.chassisGroup.position.y = -this.landingSquash;
 
     // 8. Roll wheels
     const rollAngle = (this.velocity / VEHICLE_CONFIG.wheelRadius) * delta;
@@ -719,8 +892,8 @@ export class Vehicle {
     this.rearLeftWheel.children[0].rotation.x += rollAngle;
     this.rearRightWheel.children[0].rotation.x += rollAngle;
 
-    // 9. Dust trail emission
-    if (Math.abs(this.velocity) > 6 && !this.terrain.isRoadArea(this.position.x, this.position.z)) {
+    // 9. Dust trail emission (only when grounded off-road)
+    if (!this.isAirborne && Math.abs(this.velocity) > 6 && !this.terrain.isRoadArea(this.position.x, this.position.z)) {
       this.emitDust();
     }
     this.updateDust(delta);

@@ -69,8 +69,12 @@ export const Minimap: React.FC<Props> = ({
   const playerAngleDeg = (playerPos.heading * 180) / Math.PI;
 
   const specialPOIs = [
-    { id: 'start-plaza', name: 'Start Plaza & Monolith', x: 0, z: -16, color: '#A4B0B5', icon: '✦' },
+    { id: 'start-plaza', name: 'Start Plaza & NIERO Letters', x: 0, z: -17, color: '#A4B0B5', icon: '✦' },
     { id: 'viewpoint-overlook', name: 'Career Overlook Summit', x: 38, z: -28, color: '#8BAE9B', icon: '▲' },
+    { id: 'bowling-alley', name: '3D Bowling Alley & Synth Pads', x: 23, z: 14, color: '#E87545', icon: 'B' },
+    { id: 'soccer-arena', name: 'Soccer Pitch & Giant Ball', x: -20, z: 15, color: '#8BAE9B', icon: 'S' },
+    { id: 'river-jump', name: 'River Stunt Jump Ramp', x: 10, z: -18, color: '#E87545', icon: '⚡' },
+    { id: 'social-hub', name: 'Social & Resume Floor Tiles', x: 17, z: -17, color: '#F2F0E9', icon: '@' },
   ];
 
   // Drag handlers

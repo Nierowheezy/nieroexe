@@ -16,7 +16,10 @@ export const AchievementToast: React.FC<Props> = ({ toasts, onDismiss }) => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-20 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
+    <div
+      className="fixed left-3 right-3 sm:left-auto sm:right-4 z-50 flex flex-col gap-2 sm:max-w-sm pointer-events-none"
+      style={{ top: 'max(14px, env(safe-area-inset-top))' }}
+    >
       {toasts.map(toast => (
         <div
           key={toast.id}

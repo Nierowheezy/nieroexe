@@ -71,15 +71,21 @@ export const AudioSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#101820]/80 backdrop-blur-md animate-fade-in pointer-events-auto select-none">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-[#101820]/80 backdrop-blur-md animate-fade-in pointer-events-auto select-none"
+      style={{
+        paddingTop: 'max(10px, env(safe-area-inset-top))',
+        paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+      }}
+    >
       <div
-        className="w-full max-w-lg bg-[#17242D] border border-[#24343D] rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#F2F0E9] animate-modal-enter"
+        className="w-full max-w-lg max-h-[92dvh] bg-[#17242D] border border-[#24343D] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#F2F0E9] animate-modal-enter"
         style={{
           boxShadow: '0 25px 60px rgba(16, 24, 32, 0.98), 0 0 40px rgba(232, 117, 69, 0.12)',
         }}
       >
         {/* Modal Header */}
-        <div className="px-6 py-4.5 bg-[#24343D]/70 border-b border-[#24343D] flex items-center justify-between shrink-0">
+        <div className="px-4 py-3.5 sm:px-6 sm:py-4 bg-[#24343D]/70 border-b border-[#24343D] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#E87545]/20 border border-[#E87545]/40 text-[#E87545] flex items-center justify-center shadow">
               <Sliders className="w-5 h-5" />
@@ -109,7 +115,7 @@ export const AudioSettingsModal: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 space-y-5 overflow-y-auto max-h-[75vh]">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
           {/* Master Volume Row */}
           <div className="bg-[#101820]/90 border border-[#24343D] rounded-2xl p-4 flex flex-col gap-2.5">
             <div className="flex items-center justify-between">

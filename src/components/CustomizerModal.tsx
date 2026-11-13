@@ -35,20 +35,21 @@ export const CustomizerModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#101820]/90 backdrop-blur-md animate-fade-in"
-      style={{ padding: '16px' }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#101820]/90 backdrop-blur-md animate-fade-in p-2.5 sm:p-5"
+      style={{
+        paddingTop: 'max(10px, env(safe-area-inset-top))',
+        paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+      }}
     >
       <div
-        className="w-full max-w-4xl max-h-[92vh] bg-[#17242D] border border-[#24343D] rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#F2F0E9] animate-modal-enter"
+        className="w-full max-w-4xl max-h-[92dvh] bg-[#17242D] border border-[#24343D] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#F2F0E9] animate-modal-enter p-3 sm:p-6"
         style={{
-          padding: '24px',
           boxShadow: '0 25px 60px rgba(16, 24, 32, 0.98), 0 0 40px rgba(232, 117, 69, 0.15)',
         }}
       >
         {/* Top Header */}
         <div
-          className="bg-[#24343D]/70 border border-[#24343D] rounded-2xl flex items-center justify-between shrink-0 mb-4"
-          style={{ padding: '16px 20px' }}
+          className="bg-[#24343D]/70 border border-[#24343D] rounded-2xl flex items-center justify-between shrink-0 mb-3 sm:mb-4 px-3.5 py-3 sm:px-5 sm:py-4"
         >
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-[#E87545] text-[#101820] flex items-center justify-center font-bold shadow shrink-0">

@@ -10,6 +10,7 @@ import { PALETTE, VehicleModelType, EnvironmentTheme } from './constants';
 import { TerrainSystem } from './terrain';
 import { EnvironmentSystem } from './environment';
 import { LandmarkSystem, InteractiveTarget } from './landmarks';
+import { PlaygroundSystem } from './playground';
 import { Vehicle, VehicleInput } from './vehicle';
 import { CameraController } from './camera';
 import { RaceSystem, RaceState } from './race';
@@ -25,6 +26,7 @@ export interface GameCallbacks {
   onTokenCollect: (token: TokenCollectible, collectedCount: number, totalTokens: number) => void;
   onAchievementUnlock: (title: string, desc: string) => void;
   onInspectProject: (project: Project) => void;
+  onOpenPortfolioTab?: (tab: 'about' | 'projects' | 'experience' | 'skills' | 'resume' | 'contact') => void;
   onPlayerPosUpdate?: (pos: { x: number; z: number; heading: number }) => void;
   onRaceUpdate?: (state: RaceState) => void;
   onTourUpdate?: (isActive: boolean, project: Project | null) => void;
@@ -43,6 +45,7 @@ export class GameEngine {
   private terrain: TerrainSystem;
   private environment: EnvironmentSystem;
   private landmarks: LandmarkSystem;
+  private playground: PlaygroundSystem;
   private vehicle: Vehicle;
   private race: RaceSystem;
   private tour: CinematicTourSystem;
@@ -139,6 +142,22 @@ export class GameEngine {
     this.landmarks = new LandmarkSystem(this.terrain);
     this.scene.add(this.landmarks.group);
 
+    this.playground = new PlaygroundSystem(this.terrain, {
+      onBowlingStrike: () => {
+        this.unlockAchievement('Bowling Kingpin!', 'STRIKE! Knocked down all 10 pins in the 3D alley');
+      },
+      onSoccerGoal: () => {
+        this.unlockAchievement('World Cup Striker!', 'GOOOAL! Fired the giant ball straight into the net');
+      },
+      onFirstPropSmash: () => {
+        this.unlockAchievement('Wrecking Ball', 'Smashed through the 3D NIERO title blocks & props');
+      },
+      onPropsReset: () => {
+        this.callbacks.onAchievementUnlock('Playground Reset', 'NIERO letters, bowling pins & soccer ball restored');
+      },
+    });
+    this.scene.add(this.playground.group);
+
     this.race = new RaceSystem(this.terrain);
     this.scene.add(this.race.group);
 
@@ -219,50 +238,118 @@ export class GameEngine {
   }
 
   private bindEvents() {
+    this.container.style.touchAction = 'none';
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
     window.addEventListener('resize', this.handleResize);
     this.container.addEventListener('pointerdown', this.handlePointerDown);
     window.addEventListener('pointermove', this.handlePointerMove);
     window.addEventListener('pointerup', this.handlePointerUp);
+    window.addEventListener('pointercancel', this.handlePointerUp);
     this.container.addEventListener('wheel', this.handleWheel, { passive: true });
     this.container.style.cursor = 'grab';
   }
 
+  private activePointers = new Map<number, { x: number; y: number }>();
+  private activeDragPointerId: number | null = null;
   private isPointerDragging: boolean = false;
   private pointerMovedDist: number = 0;
   private lastPointerX: number = 0;
   private lastPointerY: number = 0;
+  private lastPinchDist: number | null = null;
 
   private handlePointerDown = (e: PointerEvent) => {
     sound.enableAudio();
-    this.isPointerDragging = true;
-    this.pointerMovedDist = 0;
-    this.lastPointerX = e.clientX;
-    this.lastPointerY = e.clientY;
-    this.container.style.cursor = 'grabbing';
+    this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    try {
+      this.container.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignore if pointer capture is unsupported
+    }
+
+    if (this.activePointers.size === 1) {
+      this.activeDragPointerId = e.pointerId;
+      this.isPointerDragging = true;
+      this.pointerMovedDist = 0;
+      this.lastPointerX = e.clientX;
+      this.lastPointerY = e.clientY;
+      this.lastPinchDist = null;
+      this.container.style.cursor = 'grabbing';
+    } else if (this.activePointers.size === 2) {
+      // Enter pinch-to-zoom mode
+      const pts = Array.from(this.activePointers.values());
+      this.lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    }
   };
 
   private handlePointerMove = (e: PointerEvent) => {
-    if (!this.isPointerDragging) return;
+    if (!this.activePointers.has(e.pointerId)) return;
+    this.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // 2-finger pinch-to-zoom on touch screens
+    if (this.activePointers.size === 2) {
+      const pts = Array.from(this.activePointers.values());
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      if (this.lastPinchDist !== null) {
+        const pinchDelta = this.lastPinchDist - dist;
+        this.cameraCtrl.zoom(pinchDelta * 0.05);
+      }
+      this.lastPinchDist = dist;
+      return;
+    }
+
+    if (!this.isPointerDragging || e.pointerId !== this.activeDragPointerId) return;
     const dx = e.clientX - this.lastPointerX;
     const dy = e.clientY - this.lastPointerY;
     this.lastPointerX = e.clientX;
     this.lastPointerY = e.clientY;
     this.pointerMovedDist += Math.hypot(dx, dy);
 
-    // Pan camera 360 degrees
-    this.cameraCtrl.addOrbit(dx * 0.006, -dy * 0.005);
+    // Higher sensitivity on narrow touch devices so a single thumb swipe reaches wide 360° angles effortlessly
+    const isTouch = e.pointerType === 'touch';
+    const sensX = isTouch ? 0.013 : 0.0065;
+    const sensY = isTouch ? 0.01 : 0.0055;
+    this.cameraCtrl.addOrbit(dx * sensX, -dy * sensY);
   };
 
   private handlePointerUp = (e: PointerEvent) => {
+    this.activePointers.delete(e.pointerId);
+    try {
+      if (this.container.hasPointerCapture(e.pointerId)) {
+        this.container.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore
+    }
+
+    if (this.activePointers.size < 2) {
+      this.lastPinchDist = null;
+    }
+
+    if (e.pointerId !== this.activeDragPointerId) return;
+
+    this.activeDragPointerId = null;
     if (!this.isPointerDragging) return;
     this.isPointerDragging = false;
     this.container.style.cursor = 'grab';
     this.cameraCtrl.endPan();
 
-    // If it was a click/tap without dragging, inspect target
-    if (this.pointerMovedDist < 6) {
+    // Hand off drag if another finger is still down
+    if (this.activePointers.size === 1) {
+      const [nextId, pt] = this.activePointers.entries().next().value as [
+        number,
+        { x: number; y: number }
+      ];
+      this.activeDragPointerId = nextId;
+      this.isPointerDragging = true;
+      this.lastPointerX = pt.x;
+      this.lastPointerY = pt.y;
+      return;
+    }
+
+    // If it was a click/tap without dragging (and not pointercancel), inspect target
+    if (e.type === 'pointerup' && this.pointerMovedDist < 10) {
       const rect = this.container.getBoundingClientRect();
       this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -344,6 +431,12 @@ export class GameEngine {
       case ' ':
         this.inputState.brake = true;
         break;
+      case 'f':
+      case 'F':
+        if (!e.repeat) {
+          this.triggerHorn();
+        }
+        break;
       case 'r':
       case 'R':
         this.resetVehicle();
@@ -403,8 +496,17 @@ export class GameEngine {
   }
 
   public resetVehicle() {
-    this.vehicle.reset(0, -16, 0);
+    this.vehicle.reset(0, -17.0, 0);
     this.cameraCtrl.setInspectTarget(null);
+  }
+
+  public triggerHorn() {
+    this.vehicle.triggerHorn();
+    this.unlockAchievement('Beep Beep!', 'Honked the custom NIERO buggy horn [F]');
+  }
+
+  public resetPlaygroundProps() {
+    this.playground.resetAllProps();
   }
 
   public teleportTo(x: number, z: number, angle: number = 0) {
@@ -520,7 +622,16 @@ export class GameEngine {
       if (this.visitedProjects.size === 4) {
         this.unlockAchievement('Master Explorer', 'Discovered all 4 engineering projects across the world');
       }
+    } else if (this.currentNearby.type === 'social') {
+      if (this.currentNearby.socialAction === 'resume') {
+        this.callbacks.onOpenPortfolioTab?.('resume');
+      } else if (this.currentNearby.socialAction === 'contact' || this.currentNearby.externalUrl) {
+        this.callbacks.onOpenPortfolioTab?.('contact');
+      }
+    } else if (this.currentNearby.id === 'checkpoint-about') {
+      this.callbacks.onOpenPortfolioTab?.('about');
     } else if (this.currentNearby.id === 'checkpoint-experience') {
+      this.callbacks.onOpenPortfolioTab?.('experience');
       this.unlockAchievement('Overlook Master', 'Reached the scenic career and experience summit');
     }
   }
@@ -544,8 +655,22 @@ export class GameEngine {
       this.callbacks.onTourUpdate?.(true, autoRes.activeProject);
       this.callbacks.onAutoDriveUpdate?.(true, autoRes.activeProject);
     } else {
-      this.vehicle.update(delta, this.inputState, this.environment.colliders);
+      this.vehicle.update(
+        delta,
+        this.inputState,
+        this.environment.colliders,
+        (x, z) => this.playground.getRampHeightAt(x, z),
+        (airTime) => {
+          this.unlockAchievement(
+            'Airborne Stunt!',
+            `Cleared ${airTime.toFixed(2)}s of hang time off a stunt ramp`
+          );
+        }
+      );
     }
+
+    // Update Bruno Simon-inspired Interactive 3D Playground Physics
+    this.playground.update(delta, this.vehicle.position, this.vehicle.velocity, this.vehicle.heading);
 
     // Dynamic Weather system update (rain streaks & light shifts)
     this.weather.update(delta, this.vehicle.position);
@@ -628,13 +753,32 @@ export class GameEngine {
     this.environment.update(delta);
     this.landmarks.update(elapsedTime, delta);
 
-    // 5. Proximity to Landmarks & Checkpoints
+    // 5. Proximity to Landmarks, Checkpoints & Social Floor Tiles
     let foundNearby: InteractiveTarget | null = null;
     for (const item of this.landmarks.interactables) {
       const dist = this.vehicle.position.distanceTo(item.position);
       if (dist < item.interactRadius) {
         foundNearby = item;
         break;
+      }
+    }
+
+    if (!foundNearby) {
+      for (const tile of this.playground.interactables) {
+        const dist = this.vehicle.position.distanceTo(tile.position);
+        if (dist < tile.interactRadius) {
+          foundNearby = {
+            id: tile.id,
+            type: 'social',
+            title: tile.title,
+            subtitle: tile.subtitle,
+            socialAction: tile.action,
+            externalUrl: tile.url,
+            position: tile.position,
+            interactRadius: tile.interactRadius,
+          };
+          break;
+        }
       }
     }
 
@@ -687,11 +831,13 @@ export class GameEngine {
     this.container.removeEventListener('pointerdown', this.handlePointerDown);
     window.removeEventListener('pointermove', this.handlePointerMove);
     window.removeEventListener('pointerup', this.handlePointerUp);
+    window.removeEventListener('pointercancel', this.handlePointerUp);
     this.container.removeEventListener('wheel', this.handleWheel);
 
     this.terrain.dispose();
     this.environment.dispose();
     this.landmarks.dispose();
+    this.playground.dispose();
     this.vehicle.dispose();
     this.renderer.dispose();
 

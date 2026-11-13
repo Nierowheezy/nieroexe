@@ -19,12 +19,16 @@ import { PALETTE } from './constants';
 import { PROJECTS, TOKENS, Project, TokenCollectible } from '../data/portfolioData';
 import { TerrainSystem } from './terrain';
 
+import { SocialTileAction } from './playground';
+
 export interface InteractiveTarget {
   id: string;
-  type: 'project' | 'checkpoint' | 'viewpoint';
+  type: 'project' | 'checkpoint' | 'viewpoint' | 'social';
   title: string;
   subtitle: string;
   project?: Project;
+  socialAction?: SocialTileAction;
+  externalUrl?: string;
   position: THREE.Vector3;
   interactRadius: number;
 }

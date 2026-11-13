@@ -523,6 +523,134 @@ class SoundSystem {
     osc.start(now);
     osc.stop(now + 0.06);
   }
+
+  // --- 5. Bruno-Inspired Playground SFX (Car Horn, Prop Collision, Bowling Strike, Synth Pads, Landing) ---
+
+  public playHorn() {
+    this.enableAudio();
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    const now = this.ctx.currentTime;
+
+    try {
+      // Classic dual-tone expressive buggy horn (F4 + A4)
+      const freqs = [349.23, 440.0];
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1400, now);
+
+      const masterHornGain = this.ctx.createGain();
+      masterHornGain.gain.setValueAtTime(0.001, now);
+      masterHornGain.gain.linearRampToValueAtTime(0.09, now + 0.02);
+      masterHornGain.gain.setValueAtTime(0.085, now + 0.18);
+      masterHornGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+      filter.connect(masterHornGain);
+      masterHornGain.connect(this.masterGain);
+
+      freqs.forEach(freq => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, now);
+        osc.connect(filter);
+        osc.start(now);
+        osc.stop(now + 0.3);
+      });
+    } catch {}
+  }
+
+  public playPropHit(intensity: number = 0.6) {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    const now = this.ctx.currentTime;
+    const clamped = Math.max(0.15, Math.min(1, intensity));
+
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      const baseFreq = 180 + Math.random() * 140;
+      osc.frequency.setValueAtTime(baseFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(55, now + 0.11);
+
+      gain.gain.setValueAtTime(0.09 * clamped, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(now);
+      osc.stop(now + 0.13);
+    } catch {}
+  }
+
+  public playBowlingStrike() {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    const now = this.ctx.currentTime;
+
+    try {
+      // Cascading pin clatter
+      for (let i = 0; i < 6; i++) {
+        const delay = i * 0.045;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(420 + Math.random() * 320, now + delay);
+        osc.frequency.exponentialRampToValueAtTime(110, now + delay + 0.1);
+
+        gain.gain.setValueAtTime(0.07, now + delay);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.12);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(now + delay);
+        osc.stop(now + delay + 0.13);
+      }
+      this.playCollectToken();
+    } catch {}
+  }
+
+  public playSynthNote(freq: number) {
+    this.enableAudio();
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    const now = this.ctx.currentTime;
+
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.11, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(now);
+      osc.stop(now + 0.46);
+    } catch {}
+  }
+
+  public playLandingThud(strength: number = 0.7) {
+    if (this.isMuted || !this.ctx || !this.masterGain) return;
+    const now = this.ctx.currentTime;
+    const clamped = Math.max(0.2, Math.min(1, strength));
+
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.exponentialRampToValueAtTime(36, now + 0.18);
+
+      gain.gain.setValueAtTime(0.13 * clamped, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain);
+      osc.start(now);
+      osc.stop(now + 0.21);
+    } catch {}
+  }
 }
 
 export const sound = new SoundSystem();

@@ -74,21 +74,22 @@ export const PortfolioModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#101820]/90 backdrop-blur-md animate-fade-in"
-      style={{ padding: '16px' }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#101820]/90 backdrop-blur-md animate-fade-in p-2.5 sm:p-5"
+      style={{
+        paddingTop: 'max(10px, env(safe-area-inset-top))',
+        paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+      }}
     >
-      {/* Spacious Modal Dialog with outer padding requested by user */}
+      {/* Spacious Modal Dialog with responsive padding */}
       <div
-        className="w-full max-w-5xl xl:max-w-6xl max-h-[92vh] bg-[#17242D] border border-[#24343D] rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#F2F0E9] animate-modal-enter select-text"
+        className="w-full max-w-5xl xl:max-w-6xl max-h-[92dvh] bg-[#17242D] border border-[#24343D] rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-[#F2F0E9] animate-modal-enter select-text p-3 sm:p-5"
         style={{
-          padding: '20px',
           boxShadow: '0 25px 60px rgba(16, 24, 32, 0.98), 0 0 40px rgba(232, 117, 69, 0.12)',
         }}
       >
         {/* Top Header Card */}
         <div
-          className="bg-[#24343D]/70 border border-[#24343D] rounded-2xl flex items-center justify-between shrink-0 mb-3"
-          style={{ padding: '16px 20px' }}
+          className="bg-[#24343D]/70 border border-[#24343D] rounded-2xl flex items-center justify-between shrink-0 mb-2.5 sm:mb-3 px-3.5 py-3 sm:px-5 sm:py-4"
         >
           <div className="flex items-center gap-3.5 min-w-0">
             <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#E87545] text-[#101820] font-mono font-bold flex items-center justify-center text-sm sm:text-base shadow shrink-0">
@@ -166,8 +167,7 @@ export const PortfolioModal: React.FC<Props> = ({
 
         {/* Tab Content Body Container */}
         <div
-          className="flex-1 overflow-y-auto space-y-6 sm:space-y-8 rounded-2xl bg-[#101820]/40 border border-[#24343D]/60"
-          style={{ padding: '24px' }}
+          className="flex-1 overflow-y-auto space-y-5 sm:space-y-8 rounded-2xl bg-[#101820]/40 border border-[#24343D]/60 p-3.5 sm:p-6"
         >
           {/* TAB 1: ABOUT */}
           {activeTab === 'about' && (
@@ -664,16 +664,14 @@ export const PortfolioModal: React.FC<Props> = ({
 
         {/* Footer Card */}
         <div
-          className="bg-[#24343D]/50 border border-[#24343D] rounded-2xl flex items-center justify-between text-xs sm:text-sm text-[#A4B0B5] shrink-0 mt-3"
-          style={{ padding: '12px 18px' }}
+          className="bg-[#24343D]/50 border border-[#24343D] rounded-2xl flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm text-[#A4B0B5] shrink-0 mt-2.5 sm:mt-3 px-3.5 py-2.5 sm:px-4 sm:py-3"
         >
-          <div className="font-mono text-xs text-[#A4B0B5]">NIERO.EXE // Interactive World Portfolio</div>
+          <div className="font-mono text-[11px] sm:text-xs text-[#A4B0B5]">NIERO.EXE // World Portfolio</div>
           <button
             onClick={onClose}
-            className="rounded-xl bg-[#17242D] hover:bg-[#24343D] border border-[#24343D] text-xs sm:text-sm font-medium text-[#F2F0E9] transition-colors"
-            style={{ padding: '8px 16px' }}
+            className="rounded-xl bg-[#17242D] hover:bg-[#24343D] border border-[#24343D] text-xs sm:text-sm font-medium text-[#F2F0E9] transition-colors px-3 py-1.5 sm:px-4 sm:py-2"
           >
-            Resume Driving (Back to World)
+            Resume Driving
           </button>
         </div>
       </div>

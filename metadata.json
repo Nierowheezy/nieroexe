@@ -1,4 +1,6 @@
 {
   "name": "NIERO.EXE — Interactive 3D World Portfolio",
-  "description": "Interactive low-poly 3D world portfolio of Olabode Olaniyi David (Niero), Full Stack Software Engineer. Drive and explore projects, experience, and skills."
+  "description": "Interactive low-poly 3D world portfolio of Olabode Olaniyi David (Niero), Full Stack Software Engineer. Drive and explore projects, experience, and skills.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

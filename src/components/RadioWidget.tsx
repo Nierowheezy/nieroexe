@@ -28,7 +28,7 @@ export const RadioWidget: React.FC = () => {
   });
   const [isStationsOpen, setIsStationsOpen] = useState<boolean>(false);
   const [isSpectrumExpanded, setIsSpectrumExpanded] = useState<boolean>(false);
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
   const [volume, setVolume] = useState<number>(radio.getVolume());
 
   // Draggable position state
@@ -236,7 +236,7 @@ export const RadioWidget: React.FC = () => {
       }
     >
       <div
-        className="bg-[#17242D]/98 border border-[#24343D] rounded-2xl shadow-2xl flex flex-col gap-2 transition-all w-[320px] sm:w-[350px]"
+        className="bg-[#17242D]/98 border border-[#24343D] rounded-2xl shadow-2xl flex flex-col gap-2 transition-all w-[min(350px,calc(100vw-24px))]"
         style={{ padding: '10px 14px' }}
       >
         {/* Drag Grip Handle Header Bar */}

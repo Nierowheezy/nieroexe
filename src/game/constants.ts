@@ -221,7 +221,7 @@ export const WORLD_CONFIG = {
   bridgeWidth: 10,
   bridgeLength: 24,
   bridgeElevation: 1.8,
-  spawnPoint: { x: 0, z: -16, angle: 0 },
+  spawnPoint: { x: 0, z: -17.0, angle: 0 },
 };
 
 export const VEHICLE_CONFIG = {
@@ -230,9 +230,10 @@ export const VEHICLE_CONFIG = {
   acceleration: 28,
   brakeDeceleration: 42,
   naturalFriction: 14,
-  turnSpeed: 2.8,
-  maxSteerAngle: 0.52, // ~30 deg
-  steerReturnSpeed: 6.0,
+  turnSpeed: 1.85,
+  maxSteerAngle: 0.40, // ~23 deg max wheel lock
+  steerRampSpeed: 3.2, // Smooth progressive steer ramp on tap/hold
+  steerReturnSpeed: 6.5, // Crisp self-centering when released
   wheelRadius: 0.55,
   wheelBase: 2.2,
   trackWidth: 1.8,

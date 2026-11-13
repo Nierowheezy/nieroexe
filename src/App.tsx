@@ -34,7 +34,7 @@ export default function App() {
   const [speedMph, setSpeedMph] = useState<number>(0);
   const [tokensCount, setTokensCount] = useState<number>(0);
   const [nearbyTarget, setNearbyTarget] = useState<InteractiveTarget | null>(null);
-  const [playerPos, setPlayerPos] = useState<PlayerPosition>({ x: 0, z: -16, heading: 0 });
+  const [playerPos, setPlayerPos] = useState<PlayerPosition>({ x: 0, z: -17, heading: 0 });
   const [uncollectedTokenIds, setUncollectedTokenIds] = useState<Set<string>>(
     () => new Set(TOKENS.map(t => t.id))
   );
@@ -112,6 +112,10 @@ export default function App() {
       onInspectProject: (project: Project) => {
         setSelectedProject(project);
       },
+      onOpenPortfolioTab: (tab: PortfolioTab) => {
+        setPortfolioTab(tab);
+        setPortfolioOpen(true);
+      },
       onRaceUpdate: (state) => {
         setRaceState(state);
       },
@@ -147,6 +151,18 @@ export default function App() {
       }
     }
   }, [addToast]);
+
+  const handleTriggerHorn = useCallback(() => {
+    if (engineRef.current) {
+      engineRef.current.triggerHorn();
+    }
+  }, []);
+
+  const handleResetProps = useCallback(() => {
+    if (engineRef.current) {
+      engineRef.current.resetPlaygroundProps();
+    }
+  }, []);
 
   // Live Lagos Weather Sync
   const loadLagosWeather = useCallback(async (showToastNotice: boolean = false) => {
@@ -281,11 +297,11 @@ export default function App() {
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-[#101820]">
+    <div className="relative w-full h-[100dvh] overflow-hidden bg-[#101820]">
       {/* 1. Dedicated WebGL Canvas Mount Container */}
       <div
         ref={canvasMountRef}
-        className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing"
+        className="absolute inset-0 w-full h-full touch-none cursor-grab active:cursor-grabbing"
       />
 
       {/* 2. HUD Overlay (Minimal Top Bar, Minimap Radar, Proximity Banner, Collapsible Dock, Mobile Controls) */}
@@ -303,6 +319,8 @@ export default function App() {
         lagosWeather={lagosWeather}
         nitroState={nitroState}
         onTriggerNitro={handleTriggerNitro}
+        onTriggerHorn={handleTriggerHorn}
+        onResetProps={handleResetProps}
         onOpenAudioSettings={() => setAudioSettingsOpen(true)}
         onRefreshLagosWeather={() => loadLagosWeather(true)}
         onInteract={handleInteract}
