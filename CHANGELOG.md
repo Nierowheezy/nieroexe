@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Collapsible UI** — Header bar, minimap radar, bottom dock all hideable for cinema mode
 
 ### Changed
-- Removed AI Studio dependencies (@google/genai)
+- Removed external AI dependencies
 - Updated build configuration for standard Vite deployment
 - Improved vehicle physics with suspension lean and Ackermann-style steering
 - Enhanced collision detection with obstacle pushback
